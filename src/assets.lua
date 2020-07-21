@@ -1,4 +1,5 @@
 local Assets = {}
+Assets.sprites = {}
 
 function Assets.load()
   Assets.addSprites()
