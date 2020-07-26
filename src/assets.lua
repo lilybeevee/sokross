@@ -72,19 +72,22 @@ function Assets.addTiles()
     {
       name = "rule",
       sprites = {"rule"},
-      colors = {{0, 3}}
+      colors = {{0, 3}},
+      layer = 5,
     },
     {
       name = "wall",
       sprites = {"rect"},
-      colors = {{0, 1}}
+      colors = {{0, 1}},
+      layer = 1,
     },
     {
       name = "flof",
       sprites = {"flof_body", "flof_eyes"},
       colors = {{1, 3}, {1, 1}},
+      layer = 4,
       walk = true,
-      rotate = true
+      rotate = true,
     }
   }
 
@@ -99,12 +102,12 @@ function Assets.addWords()
     {
       name = "flof",
       type = "noun",
-      color = 1
+      color = 1,
     },
     {
       name = "play",
       type = "prop",
-      color = 2
+      color = 2,
     },
     {
       name = "wall",
@@ -115,12 +118,12 @@ function Assets.addWords()
     {
       name = "stop",
       type = "prop",
-      color = 4
+      color = 4,
     },
     {
       name = "not",
       type = "mod",
-      color = 3
+      color = 3,
     }
   }
 
