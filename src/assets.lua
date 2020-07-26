@@ -72,12 +72,17 @@ function Assets.addTiles()
     {
       name = "rule",
       sprites = {"rule"},
-      colors = {{0, 2}}
+      colors = {{0, 3}}
+    },
+    {
+      name = "wall",
+      sprites = {"rect"},
+      colors = {{0, 1}}
     },
     {
       name = "flof",
       sprites = {"flof_body", "flof_eyes"},
-      colors = {{1, 2}, {1, 0}},
+      colors = {{1, 3}, {1, 1}},
       walk = true,
       rotate = true
     }
@@ -100,6 +105,17 @@ function Assets.addWords()
       name = "play",
       type = "prop",
       color = 2
+    },
+    {
+      name = "wall",
+      type = "noun",
+      color = 0,
+      dark = true,
+    },
+    {
+      name = "stop",
+      type = "prop",
+      color = 4
     },
     {
       name = "not",

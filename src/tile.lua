@@ -11,6 +11,20 @@ function Tile:init(name, x, y, o)
   if o.word then
     self.wordname = o.word
     self.word = Assets.words[o.word]
+
+    local side_type = "none"
+    if self.word.type == "noun" then
+      side_type = "in"
+    elseif self.word.type == "prop" then
+      side_type = "out"
+    elseif self.word.type == "mod" then
+      side_type = "all"
+    end
+
+    self.sides = o.sides or {}
+    for i = 1, 4 do
+      self.sides[i] = self.sides[i] or side_type
+    end
   end
 
   self.tile = Assets.tiles[name]
@@ -18,33 +32,52 @@ function Tile:init(name, x, y, o)
 end
 
 function Tile:draw(palette)
-  local sprites = self.tile.sprites
-  local colors = self.tile.colors
+  love.graphics.push()
+  love.graphics.translate(TILE_SIZE/2, TILE_SIZE/2)
+
+  if self.tile.rotate then
+    love.graphics.rotate(math.rad(self.dir-1 * -90))
+  end
 
   if self.name == "rule" and self.word then
-    local text_color = {self.word.color, 0}
-    if self.active then
-      text_color = {self.word.color, 3}
-    end
+    local rule_base = Assets.sprites["tiles/rule"]
+    local word_sprite = Assets.sprites["words/"..self.word.name]
+    palette:setColor(self.word.color, self.word.dark and 2 or 3)
+    love.graphics.draw(rule_base, -rule_base:getWidth()/2, -rule_base:getHeight()/2)
+    palette:setColor(self.word.color, self.word.dark and 0 or 1)
+    love.graphics.draw(word_sprite, -word_sprite:getWidth()/2, -word_sprite:getHeight()/2)
 
-    if self.word.type == "prop" then
-      sprites = {"rule", "rule_connectors", "words/"..self.word.name}
-      colors = {{self.word.color, 2}, {self.word.color, 2}, text_color}
-    elseif self.word.type == "mod" then
-      sprites = {"rule", "rule_connectors", "words/"..self.word.name}
-      colors = {{self.word.color, 2}, {self.word.color, 1}, text_color}
-    elseif self.word.type == "noun" then
-      sprites = {"rule", "words/"..self.word.name}
-      colors = {{self.word.color, 2}, text_color}
+    for i = 1, 4 do
+      local rule_side
+      if self.sides[i] == "out" then
+        palette:setColor(self.word.color, self.word.dark and 2 or 3)
+        rule_side = Assets.sprites["tiles/rule_connector"]
+      elseif self.sides[i] == "all" then
+        palette:setColor(self.word.color, self.word.dark and 1 or 2)
+        rule_side = Assets.sprites["tiles/rule_connector"]
+      elseif self.sides[i] == "none" then
+        palette:setColor(self.word.color, self.word.dark and 2 or 3)
+        rule_side = Assets.sprites["tiles/rule_side"]
+      end
+
+      if rule_side then
+        love.graphics.draw(rule_side, rule_base:getWidth()/2 - rule_side:getWidth()/2, -rule_side:getHeight()/2)
+      end
+      love.graphics.rotate(math.rad(90))
+    end
+  else
+    local sprites = self.tile.sprites
+    local colors = self.tile.colors
+
+    for i,spritename in ipairs(sprites) do
+      palette:setColor(colors[i][1], colors[i][2])
+
+      local sprite = Assets.sprites["tiles/"..spritename]
+      love.graphics.draw(sprite, -sprite:getWidth()/2, -sprite:getHeight()/2)
     end
   end
 
-  for i,spritename in ipairs(sprites) do
-    palette:setColor(colors[i][1], colors[i][2])
-
-    local sprite = Assets.sprites["tiles/"..spritename]
-    love.graphics.draw(sprite, TILE_SIZE/2 - sprite:getWidth()/2, TILE_SIZE/2 - sprite:getHeight()/2)
-  end
+  love.graphics.pop()
 end
 
 return Tile
