@@ -124,6 +124,11 @@ function Assets.addWords()
       name = "not",
       type = "mod",
       color = 3,
+    },
+    {
+      name = "plus",
+      type = "mod",
+      color = 3,
     }
   }
 

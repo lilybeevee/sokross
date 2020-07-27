@@ -3,6 +3,7 @@ local Tile = Class{}
 function Tile:init(name, x, y, o)
   o = o or {}
 
+  self.room = nil
   self.name = name
   self.x = x
   self.y = y
@@ -26,13 +27,54 @@ function Tile:init(name, x, y, o)
       self.layer = 5
     end
 
-    self.sides = o.sides or {}
+    o.sides = o.sides or {true, true, true, true}
+
+    self.sides = {}
     for i = 1, 4 do
-      self.sides[i] = self.sides[i] or side_type
+      self.sides[i] = o.sides[i] and side_type or "none"
     end
   end
   
   self.active = false
+  self.active_sides = {false, false, false, false}
+end
+
+function Tile:update()
+  if self.word and self.word.type == "mod" then
+    -- update active sides
+    self:getConnections("out")
+  end
+end
+
+function Tile:getConnections(type)
+  local inputs = {}
+  if self.word then
+    if type == "out" then
+      self.active_sides = {false, false, false, false}
+    end
+    for dir = 1, 4 do
+      local othertype = "all"
+      if type == "in" then
+        othertype = "out"
+      elseif type == "out" then
+        othertype = "in"
+      end
+      if self.sides[dir] ~= "none" and (type == "all" or self.sides[dir] == "all" or self.sides[dir] == type) then
+        local dx, dy = unpack(DIR_POS[dir])
+        local rdir = DIR_REVERSE[dir]
+        for _,tile in ipairs(self.room:getTilesAt(self.x+dx, self.y+dy)) do
+          if tile.word and tile.sides[rdir] ~= "none" and (type == "all" or tile.sides[rdir] == "all" or tile.sides[rdir] == othertype) then
+            table.insert(inputs, tile)
+
+            if type == "out" then
+              self.active_sides[dir] = true
+            end
+          end
+        end
+      end
+    end
+  end
+  return inputs
 end
 
 function Tile:draw(palette)
@@ -48,12 +90,16 @@ function Tile:draw(palette)
     local word_sprite = Assets.sprites["words/"..self.word.name]
     palette:setColor(self.word.color, self.word.dark and 2 or 3)
     love.graphics.draw(rule_base, -rule_base:getWidth()/2, -rule_base:getHeight()/2)
-    palette:setColor(self.word.color, self.word.dark and 0 or 1)
+    if self.active then
+      palette:setColor(self.word.color, self.word.dark and 3 or 4)
+    else
+      palette:setColor(self.word.color, self.word.dark and 0 or 1)
+    end
     love.graphics.draw(word_sprite, -word_sprite:getWidth()/2, -word_sprite:getHeight()/2)
 
     for i = 1, 4 do
       local rule_side
-      if self.sides[i] == "out" then
+      if self.sides[i] == "out" or (self.sides[i] == "all" and self.active_sides[i]) then
         palette:setColor(self.word.color, self.word.dark and 2 or 3)
         rule_side = Assets.sprites["tiles/rule_connector"]
       elseif self.sides[i] == "all" then

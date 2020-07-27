@@ -11,6 +11,7 @@ Tile = require "src.tile"
 Game = require "src.game"
 Editor = require "src.editor"
 Room = require "src.room"
+Rules = require "src.rules"
 
 function love.load()
   print("Sokoma? What's that")
@@ -18,5 +19,5 @@ function love.load()
   love.graphics.setDefaultFilter("nearest","nearest")
   Assets.load()
   Gamestate.registerEvents()
-  Gamestate.switch(Editor)
+  Gamestate.switch(Game)
 end
