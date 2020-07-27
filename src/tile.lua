@@ -32,8 +32,6 @@ function Tile:init(name, x, y, o)
     end
   end
   
-  Level.tiles_by_layer[self.layer][self] = true
-  
   self.active = false
 end
 

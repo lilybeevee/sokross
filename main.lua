@@ -3,14 +3,14 @@ Class = require "lib.hump.class"
 Timer = require "lib.hump.timer"
 Vector = require "lib.hump.vector-light"
 
-require "src.utils"
 require "src.constants"
+Utils = require "src.utils"
 Assets = require "src.assets"
 Tile = require "src.tile"
 
 Game = require "src.game"
 Editor = require "src.editor"
-Level = require "src.level"
+Room = require "src.room"
 
 function love.load()
   print("Sokoma? What's that")

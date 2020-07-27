@@ -1,3 +1,5 @@
+local Utils = {}
+
 function dump(o)
   if type(o) == 'table' then
     local s = '{'
@@ -22,3 +24,30 @@ function dump(o)
     return tostring(o)
   end
 end
+
+function Utils.copy(obj, deep)
+  if type(obj) == "table" then
+    local ret = {}
+    for k,v in pairs(obj) do
+      if deep then
+        ret[k] = Utils.copy(v, true)
+      else
+        ret[k] = v
+      end
+    end
+    return ret
+  else
+    return obj
+  end
+end
+
+function Utils.removeFromTable(t, value)
+  for i,v in ipairs(t) do
+    if v == value then
+      table.remove(t, i)
+      return
+    end
+  end
+end
+
+return Utils
