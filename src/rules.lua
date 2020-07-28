@@ -68,7 +68,7 @@ function Rules:parse()
 end
 
 function Rules:parseRaw(raw)
-  print("Parsing raw: "..dump(raw))
+  --print("Parsing raw: "..dump(raw))
 
   -- take the target and effect from the start and end of the raw rule respectively
   local target = table.remove(raw, 1)
@@ -172,12 +172,10 @@ function Rules:applyNot()
       local to_remove = {}
       for i,rule in ipairs(lower) do
         if self.not_rules[layer][rule.target..","..rule.effect] then
-          print("Cancelling ["..i.."]: "..dump(rule))
           table.insert(to_remove, i)
         end
       end
       for i,index in ipairs(to_remove) do
-        print("Removing: "..index-i+1)
         table.remove(lower, index-i+1)
       end
     elseif self.not_rules[layer - 1] then

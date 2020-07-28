@@ -1,13 +1,26 @@
 local Room = Class{}
 
-function Room:init(x, y, width, height, parent, layer)
-  self.palette = "default"
-  self.x = x
-  self.y = y
+function Room:init(width, height, o)
+  o = o or {}
+
+  if o.id then
+    self.id = o.id
+  elseif Gamestate.current() == Game then
+    self.id = Game.room_id
+    Game.room_id = Game.room_id + 1
+    Game.rooms_by_id[self.id] = self
+  else
+    self.id = 0
+  end
+
   self.width = width
   self.height = height
-  self.parent = parent
-  self.layer = layer or 1
+
+  self.palette = o.palette or "default"
+  self.x = o.x or 0
+  self.y = o.y or 0
+  self.parent = o.parent
+  self.layer = o.layer or 1
 
   self.tiles = {}
   self.tiles_by_pos = {}
@@ -20,6 +33,10 @@ function Room:init(x, y, width, height, parent, layer)
   self.rules = Rules(self)
   self.rules:addInherents()
   self.last_parsed = 0
+end
+
+function Room:remove()
+
 end
 
 function Room:parse()

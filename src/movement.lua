@@ -34,6 +34,11 @@ function Movement.move(dir)
           Game.parse_room[mover.tile.parent] = true
         end
       end
+
+      local undo_dir = mover.tile.dir ~= mover.dir and mover.tile.dir or nil
+      local undo_room = mover.room.id ~= mover.tile.parent.id and mover.tile.parent.id or nil
+      Undo:add("move", mover.tile.id, mover.tile.x, mover.tile.y, undo_dir, undo_room)
+
       mover.tile:moveTo(mover.x, mover.y, mover.room)
       mover.tile.dir = mover.dir
     end

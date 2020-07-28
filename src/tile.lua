@@ -3,6 +3,16 @@ local Tile = Class{}
 function Tile:init(name, x, y, o)
   o = o or {}
 
+  if o.id then
+    self.id = o.id
+  elseif Gamestate.current() == Game then
+    self.id = Game.tile_id
+    Game.tile_id = Game.tile_id + 1
+    Game.tiles_by_id[self.id] = self
+  else
+    self.id = 0
+  end
+
   self.parent = nil
   self.name = name
   self.x = x
@@ -39,6 +49,12 @@ function Tile:init(name, x, y, o)
   
   self.active = false
   self.active_sides = {false, false, false, false}
+end
+
+function Tile:remove()
+  if Gamestate.current() == Game then
+    Game.tiles_by_id[self.id] = nil
+  end
 end
 
 function Tile:hasRule(effect)

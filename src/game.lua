@@ -3,8 +3,11 @@ local Game = {}
 function Game:enter()
   print("Sokoma game")
 
+  self:clearIDs()
+  Undo:clear()
+
   self.turn = 0
-  self.room = Room(0, 0, 9, 9)
+  self.room = Room(9, 9)
 
   self.room:addTile(Tile("box", 3, 2))
   self.room:addTile(Tile("box", 5, 2))
@@ -16,7 +19,7 @@ function Game:enter()
   self.room:addTile(Tile("rule", 3, 7, {word = "push"}))
   self.room:addTile(Tile("rule", 1, 3, {word = "not"}))
 
-  local inner_room = Room(7, 7, 6, 5, self.room, 2)
+  local inner_room = Room(6, 5, {x=7, y=7, parent=self.room, layer=2})
   inner_room:addTile(Tile("ladder", 1, 1))
 
   self.room:addTile(Tile("room", 7, 7, {room = inner_room}))
@@ -25,6 +28,13 @@ function Game:enter()
   self.room:parse()
 
   --print(dump(self.room.rules.rules))
+end
+
+function Game:clearIDs()
+  self.tile_id = 1
+  self.room_id = 1
+  self.tiles_by_id = {}
+  self.rooms_by_id = {}
 end
 
 function Game:keypressed(key)
@@ -36,10 +46,16 @@ function Game:keypressed(key)
     self:doTurn(3)
   elseif key == "w" then
     self:doTurn(4)
+  elseif key == "z" then
+    Undo:back()
+    self:reparse()
+  elseif key == "r" then
+    Undo:goTo(0)
   end
 end
 
 function Game:doTurn(dir)
+  Undo:new()
   self.turn = self.turn + 1
   Movement.move(dir)
   self:reparse()
