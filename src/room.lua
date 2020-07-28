@@ -1,10 +1,13 @@
 local Room = Class{}
 
-function Room:init(width, height, parent)
+function Room:init(x, y, width, height, parent, layer)
   self.palette = "default"
+  self.x = x
+  self.y = y
   self.width = width
   self.height = height
   self.parent = parent
+  self.layer = layer or 1
 
   self.tiles = {}
   self.tiles_by_pos = {}
@@ -15,12 +18,30 @@ function Room:init(width, height, parent)
   end
 
   self.rules = Rules(self)
+  self.rules:addInherents()
+  self.last_parsed = 0
+end
+
+function Room:parse()
+  self.rules:parse()
+  self.last_parsed = Game.turn
+end
+
+function Room:enter()
+  Game.room = self
+  if self.parent and self.parent.last_parsed > self.last_parsed then
+    self.rules:parse()
+  end
+end
+
+function Room:getEntry()
+  return math.ceil(self.width/2)-1, math.ceil(self.height/2)-1
 end
 
 function Room:addTile(tile)
   table.insert(self.tiles, tile)
 
-  tile.room = self
+  tile.parent = self
 
   if not self.tiles_by_pos[tile.x..","..tile.y] then
     self.tiles_by_pos[tile.x..","..tile.y] = {tile}
@@ -52,8 +73,20 @@ function Room:getTilesAt(x, y)
   end
 end
 
+function Room:getTilesByName(name)
+  return self.tiles_by_name[name] or {}
+end
+
 function Room:inBounds(x, y)
   return x >= 0 and x < self.width and y >= 0 and y < self.height
+end
+
+function Room:getRules(...)
+  return self.rules:get(...)
+end
+
+function Room:hasRule(...)
+  return #self:getRules(...) > 0
 end
 
 function Room:draw()

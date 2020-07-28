@@ -12,6 +12,26 @@ function Rules:clear()
   self.new_active = {}
 end
 
+function Rules:addInherents()
+  local function addRule(target, effect)
+    table.insert(self.rules, {target = target, effect = effect})
+  end
+
+  addRule("flof", "play")
+  addRule("wall", "stop")
+  addRule("box", "push")
+  addRule("ladder", "exit")
+  --addRule("room", "push")
+  addRule("rule", "push")
+  --addRule("rule", "word")
+  --addRule("key", "push")
+  --addRule("key", "open")
+  --addRule("door", "stop")
+  --addRule("door", "lock")
+  --addRule("ring", "tele")
+  --addRule("belt", "move")
+end
+
 function Rules:get(target, effect)
   local result = {}
   for _,rule in ipairs(self.rules) do
@@ -26,13 +46,14 @@ end
 
 function Rules:parse()
   self:clear()
+  self:addInherents()
 
   -- create raw rules from tiles
   self.raw_rules = self:buildRaw()
 
   -- copy raw rules from above layers
   if self.room.parent then
-    for _,raw in ipairs(room.parent.rules.raw_rules) do
+    for _,raw in ipairs(self.room.parent.rules.raw_rules) do
       table.insert(self.raw_rules, raw)
     end
   end
@@ -87,11 +108,12 @@ function Rules:buildRaw()
     -- make all words inactive unless they've been processed
     if not self.new_active[tile] then
       tile.active = false
+      tile.active_sides = {false, false, false, false}
     end
 
     -- only parse from nouns because rules can only start from nouns
     if tile.word.type == "noun" then
-      local function process(tile, current, processed)
+      local function process(tile, current, processed, dirs)
         -- stop processing this branch if we've looped around to
         -- a word we already processed before in this branch
         if processed[tile] then
@@ -111,6 +133,9 @@ function Rules:buildRaw()
           for _,v in ipairs(current) do
             table.insert(names, v.word.name)
             v.active = true
+            if dirs[v] then
+              v.active_sides[dirs[v]] = true
+            end
             self.new_active[v] = true
           end
           table.insert(raw_rules, names)
@@ -120,10 +145,13 @@ function Rules:buildRaw()
         -- loop through all words properly connected to the current tile and
         -- recursively process them into a new branch (copied from the current)
         for _,other in ipairs(tile:getConnections("in")) do
-          process(other, Utils.copy(current), Utils.copy(processed))
+          local new_dirs = Utils.copy(dirs)
+          local dir = Dir.fromPos(tile.x-other.x, tile.y-other.y)
+          new_dirs[other] = dir
+          process(other, Utils.copy(current), Utils.copy(processed), new_dirs)
         end
       end
-      process(tile, {}, {})
+      process(tile, {}, {}, {})
     end
   end
 

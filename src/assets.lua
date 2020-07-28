@@ -76,6 +76,12 @@ function Assets.addTiles()
       layer = 5,
     },
     {
+      name = "room",
+      sprites = {"rect"},
+      colors = {{4, 2}},
+      layer = 1,
+    },
+    {
       name = "wall",
       sprites = {"rect"},
       colors = {{0, 1}},
@@ -88,7 +94,19 @@ function Assets.addTiles()
       layer = 4,
       walk = true,
       rotate = true,
-    }
+    },
+    {
+      name = "box",
+      sprites = {"box_base", "box_shade"},
+      colors = {{3, 2}, {3, 1}},
+      layer = 3,
+    },
+    {
+      name = "ladder",
+      sprites = {"ladder"},
+      colors = {{3, 2}},
+      layer = 2,
+    },
   }
 
   Assets.tiles = {}
@@ -119,6 +137,17 @@ function Assets.addWords()
       name = "stop",
       type = "prop",
       color = 4,
+    },
+    {
+      name = "box",
+      type = "noun",
+      color = 3,
+      dark = true,
+    },
+    {
+      name = "push",
+      type = "prop",
+      color = 5,
     },
     {
       name = "not",

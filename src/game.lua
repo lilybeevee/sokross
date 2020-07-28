@@ -3,36 +3,60 @@ local Game = {}
 function Game:enter()
   print("Sokoma game")
 
-  self.room = Room(7, 7)
+  self.turn = 0
+  self.room = Room(0, 0, 9, 9)
 
-  self.room:addTile(Tile("rule", 2, 2, {word = "flof"}))
-  --self.room:addTile(Tile("rule", 3, 2, {word = "play"}))
-  self.room:addTile(Tile("rule", 1, 2, {word = "not"}))
-  self.room:addTile(Tile("rule", 1, 1, {word = "not"}))
-  self.room:addTile(Tile("rule", 1, 3, {word = "stop"}))
-  self.room:addTile(Tile("rule", 2, 1, {word = "stop"}))
-  self.room:addTile(Tile("rule", 1, 4, {word = "wall"}))
+  self.room:addTile(Tile("box", 3, 2))
+  self.room:addTile(Tile("box", 5, 2))
+  self.room:addTile(Tile("box", 5, 4))
 
-  self.room:addTile(Tile("rule", 4, 4, {word = "flof", sides={true, true, false, false}}))
-  self.room:addTile(Tile("rule", 5, 4, {word = "play"}))
-  self.room:addTile(Tile("rule", 6, 4, {word = "plus"}))
-  self.room:addTile(Tile("rule", 4, 5, {word = "plus"}))
-  self.room:addTile(Tile("rule", 5, 5, {word = "plus"}))
-  self.room:addTile(Tile("rule", 6, 5, {word = "plus"}))
-  self.room:addTile(Tile("rule", 4, 6, {word = "plus"}))
-  self.room:addTile(Tile("rule", 5, 6, {word = "plus"}))
-  self.room:addTile(Tile("rule", 6, 6, {word = "plus"}))
+  self.room:addTile(Tile("flof", 3, 4))
 
-  self.room:addTile(Tile("flof", 2, 5, {dir = 2}))
+  self.room:addTile(Tile("rule", 1, 6, {word = "box"}))
+  self.room:addTile(Tile("rule", 3, 7, {word = "push"}))
+  self.room:addTile(Tile("rule", 1, 3, {word = "not"}))
 
+  local inner_room = Room(7, 7, 6, 5, self.room, 2)
+  inner_room:addTile(Tile("ladder", 1, 1))
 
-  self.room.rules:parse()
+  self.room:addTile(Tile("room", 7, 7, {room = inner_room}))
 
-  for _,tile in ipairs(self.room.tiles) do
-    tile:update()
+  self.parse_room = {}
+  self.room:parse()
+
+  --print(dump(self.room.rules.rules))
+end
+
+function Game:keypressed(key)
+  if key == "d" then
+    self:doTurn(1)
+  elseif key == "s" then
+    self:doTurn(2)
+  elseif key == "a" then
+    self:doTurn(3)
+  elseif key == "w" then
+    self:doTurn(4)
   end
+end
 
-  print(dump(self.room.rules.rules))
+function Game:doTurn(dir)
+  self.turn = self.turn + 1
+  Movement.move(dir)
+  self:reparse()
+end
+
+function Game:reparse()
+  local parse_list = {}
+  for room,_ in pairs(self.parse_room) do
+    table.insert(parse_list, room)
+  end
+  table.sort(parse_list, function(a, b)
+    return a.layer < b.layer
+  end)
+  for _,room in ipairs(parse_list) do
+    room:parse()
+  end
+  self.parse_room = {}
 end
 
 function Game:getTransform()

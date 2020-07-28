@@ -6,10 +6,12 @@ Vector = require "lib.hump.vector-light"
 require "src.constants"
 Utils = require "src.utils"
 Assets = require "src.assets"
-Tile = require "src.tile"
+Movement = require "src.movement"
+Dir = require "src.dir"
 
 Game = require "src.game"
 Editor = require "src.editor"
+Tile = require "src.tile"
 Room = require "src.room"
 Rules = require "src.rules"
 

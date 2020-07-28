@@ -3,13 +3,15 @@ local Tile = Class{}
 function Tile:init(name, x, y, o)
   o = o or {}
 
-  self.room = nil
+  self.parent = nil
   self.name = name
   self.x = x
   self.y = y
   self.tile = Assets.tiles[name]
   self.layer = self.tile.layer
+
   self.dir = o.dir or 1
+  self.room = o.room
   
   if o.word then
     self.wordname = o.word
@@ -39,19 +41,44 @@ function Tile:init(name, x, y, o)
   self.active_sides = {false, false, false, false}
 end
 
-function Tile:update()
-  if self.word and self.word.type == "mod" then
-    -- update active sides
-    self:getConnections("out")
+function Tile:hasRule(effect)
+  return self.parent:hasRule(self.name, effect)
+end
+
+function Tile:moveTo(x, y, room)
+  if room then
+    if self:hasRule("play") then
+      room:enter()
+    end
+
+    self.parent:removeTile(self)
+    self.x, self.y = x, y
+    room:addTile(self)
+  else
+    Utils.removeFromTable(self.parent.tiles_by_pos[self.x..","..self.y], self)
+    self.x, self.y = x, y
+    table.insert(self.parent.tiles_by_pos[self.x..","..self.y], self)
+  end
+
+  if self.room then
+    self.room.parent = self.parent
+    self.room.layer = self.parent.layer + 1
+    self.room.x = self.x
+    self.room.y = self.y
+  end
+end
+
+function Tile:getColor()
+  if self.word then
+    return self.word.color, self.word.dark and 2 or 3
+  else
+    return unpack(self.tile.colors[1])
   end
 end
 
 function Tile:getConnections(type)
   local inputs = {}
   if self.word then
-    if type == "out" then
-      self.active_sides = {false, false, false, false}
-    end
     for dir = 1, 4 do
       local othertype = "all"
       if type == "in" then
@@ -60,15 +87,11 @@ function Tile:getConnections(type)
         othertype = "in"
       end
       if self.sides[dir] ~= "none" and (type == "all" or self.sides[dir] == "all" or self.sides[dir] == type) then
-        local dx, dy = unpack(DIR_POS[dir])
-        local rdir = DIR_REVERSE[dir]
-        for _,tile in ipairs(self.room:getTilesAt(self.x+dx, self.y+dy)) do
+        local dx, dy = Dir.toPos(dir)
+        local rdir = Dir.reverse(dir)
+        for _,tile in ipairs(self.parent:getTilesAt(self.x+dx, self.y+dy)) do
           if tile.word and tile.sides[rdir] ~= "none" and (type == "all" or tile.sides[rdir] == "all" or tile.sides[rdir] == othertype) then
             table.insert(inputs, tile)
-
-            if type == "out" then
-              self.active_sides[dir] = true
-            end
           end
         end
       end
@@ -82,19 +105,46 @@ function Tile:draw(palette)
   love.graphics.translate(TILE_SIZE/2, TILE_SIZE/2)
 
   if self.tile.rotate then
-    love.graphics.rotate(math.rad(self.dir-1 * -90))
+    love.graphics.rotate(math.rad((self.dir-1) * 90))
   end
 
-  if self.name == "rule" and self.word then
+  if self.name == "room" and self.room then
+    local ipalette = Assets.palettes[self.room.palette]
+    ipalette:setColor(0, 1)
+    love.graphics.rectangle("fill", -TILE_SIZE/2, -TILE_SIZE/2, TILE_SIZE, TILE_SIZE)
+
+    love.graphics.push()
+    love.graphics.translate(-self.room.width, -self.room.height)
+    ipalette:setColor(0, 4)
+    love.graphics.rectangle("fill", 0, 0, self.room.width*2, self.room.height*2)
+    for x = 0, self.room.width-1 do
+      for y = 0, self.room.height-1 do
+        local color
+        if self.room.tiles_by_pos[x..","..y] and #self.room.tiles_by_pos[x..","..y] > 0 then
+          color = {self.room.tiles_by_pos[x..","..y][1]:getColor()}
+        end
+        if color then
+          ipalette:setColor(color[1], color[2])
+          love.graphics.rectangle("fill", x*2, y*2, 2, 2)
+        end
+      end
+    end
+    love.graphics.pop()
+
+    palette:setColor(0, 1)
+    love.graphics.setLineWidth(2)
+    love.graphics.rectangle("line", -TILE_SIZE/2, -TILE_SIZE/2, TILE_SIZE, TILE_SIZE)
+  elseif self.name == "rule" and self.word then
     local rule_base = Assets.sprites["tiles/rule"]
     local word_sprite = Assets.sprites["words/"..self.word.name]
     palette:setColor(self.word.color, self.word.dark and 2 or 3)
     love.graphics.draw(rule_base, -rule_base:getWidth()/2, -rule_base:getHeight()/2)
-    if self.active then
+    --[[if self.active then
       palette:setColor(self.word.color, self.word.dark and 3 or 4)
     else
       palette:setColor(self.word.color, self.word.dark and 0 or 1)
-    end
+    end]]
+    palette:setColor(self.word.color, self.word.dark and 0 or 1)
     love.graphics.draw(word_sprite, -word_sprite:getWidth()/2, -word_sprite:getHeight()/2)
 
     for i = 1, 4 do

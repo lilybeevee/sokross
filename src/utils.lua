@@ -41,6 +41,13 @@ function Utils.copy(obj, deep)
   end
 end
 
+function Utils.merge(t1, t2)
+  for _,v in ipairs(t2) do
+    table.insert(t1, v)
+  end
+  return t1
+end
+
 function Utils.removeFromTable(t, value)
   for i,v in ipairs(t) do
     if v == value then
