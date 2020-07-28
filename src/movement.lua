@@ -4,6 +4,7 @@ function Movement.move(dir)
   Movement.moved_word = false
 
   local moves = {}
+  local has_moved = {}
 
   for _,playrule in ipairs(Game.room:getRules(nil, "play")) do
     for _,tile in ipairs(Game.room:getTilesByName(playrule.target)) do
@@ -41,9 +42,17 @@ function Movement.move(dir)
 
       mover.tile:moveTo(mover.x, mover.y, mover.room)
       mover.tile.dir = mover.dir
+
+      has_moved[mover.tile] = true
     end
 
     moves = still_moving
+  end
+
+  for tile,_ in pairs(has_moved) do
+    if tile.tile.walk then
+      tile.walk_frame = not tile.walk_frame
+    end
   end
 end
 
@@ -81,8 +90,8 @@ function Movement.canMove(tile, dir, enter)
       success = true
     end
 
-    local is_entry = tile.room or tile:hasRule("exit")
-    local can_enter = other.room or other:hasRule("exit")
+    local is_entry = tile.room or (room.parent and tile:hasRule("exit"))
+    local can_enter = other.room or (room.parent and other:hasRule("exit"))
 
     if can_enter and not (success and pushable) then
       local new_movers

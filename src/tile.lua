@@ -46,6 +46,8 @@ function Tile:init(name, x, y, o)
       self.sides[i] = o.sides[i] and side_type or "none"
     end
   end
+
+  self.walk_frame = false
   
   self.active = false
   self.active_sides = {false, false, false, false}
@@ -189,6 +191,9 @@ function Tile:draw(palette)
       palette:setColor(colors[i][1], colors[i][2])
 
       local sprite = Assets.sprites["tiles/"..spritename]
+      if self.tile.walk and self.walk_frame then
+        sprite = Assets.sprites["tiles/"..spritename.."_walk"]
+      end
       love.graphics.draw(sprite, -sprite:getWidth()/2, -sprite:getHeight()/2)
     end
   end

@@ -11,6 +11,7 @@ function Game:enter()
 
   self.room:addTile(Tile("box", 3, 2))
   self.room:addTile(Tile("box", 5, 2))
+  self.room:addTile(Tile("box", 6, 2))
   self.room:addTile(Tile("box", 5, 4))
 
   self.room:addTile(Tile("flof", 3, 4))
@@ -18,6 +19,8 @@ function Game:enter()
   self.room:addTile(Tile("rule", 1, 6, {word = "box"}))
   self.room:addTile(Tile("rule", 3, 7, {word = "push"}))
   self.room:addTile(Tile("rule", 1, 3, {word = "not"}))
+  self.room:addTile(Tile("rule", 2, 1, {word = "exit"}))
+  self.room:addTile(Tile("rule", 1, 1, {word = "ladder"}))
 
   local inner_room = Room(6, 5, {x=7, y=7, parent=self.room, layer=2})
   inner_room:addTile(Tile("ladder", 1, 1))
@@ -71,6 +74,11 @@ function Game:reparse()
   end)
   for _,room in ipairs(parse_list) do
     room:parse()
+    for _,lower in ipairs(room.tiles_by_name["room"] or {}) do
+      if not parse_list[lower.room] then
+        lower.room:parse()
+      end
+    end
   end
   self.parse_room = {}
 end

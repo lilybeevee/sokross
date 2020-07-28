@@ -150,6 +150,18 @@ function Assets.addWords()
       color = 5,
     },
     {
+      name = "ladder",
+      type = "noun",
+      color = 3,
+      dark = true,
+    },
+    {
+      name = "exit",
+      type = "prop",
+      color = 5,
+      dark = true,
+    },
+    {
       name = "not",
       type = "mod",
       color = 3,
@@ -157,7 +169,8 @@ function Assets.addWords()
     {
       name = "plus",
       type = "mod",
-      color = 3,
+      color = 0,
+      dark = true,
     }
   }
 
