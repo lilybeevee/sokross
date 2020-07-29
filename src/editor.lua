@@ -64,6 +64,7 @@ function Editor:validateTiles(width, height)
 end
 
 function Editor:buildRoomTree()
+  self.room_tree = {}
   local current_room = Level.room
   while current_room.exit do
     table.insert(self.room_tree, 1, current_room.exit)
@@ -76,9 +77,11 @@ function Editor:keypressed(key)
     self:openTileSelector()
   elseif key == "q" then
     if love.keyboard.isDown("ctrl") then
-      Level.start = {}
-      for _,tile in ipairs(self.room_tree) do
-        table.insert(Level.start, tile.key)
+      if not Level.room.paradox then
+        Level.start = {}
+        for _,tile in ipairs(self.room_tree) do
+          table.insert(Level.start, tile.key)
+        end
       end
     else
       self.placing_entrance = not self.placing_entrance
@@ -213,7 +216,7 @@ function Editor:eraseTile(x,y)
 end
 
 function Editor:isStart()
-  if #Level.start ~= #self.room_tree then
+  if Level.room.paradox or #Level.start ~= #self.room_tree then
     return false
   end
   for i,key in ipairs(Level.start) do

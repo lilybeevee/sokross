@@ -32,7 +32,9 @@ function Movement.move(dir)
       end
     end
 
+    print("moving!!!!!!!!!!!!!!!!!")
     for _,mover in ipairs(movers) do
+      print("moving: "..mover.tile.key)
       if mover.tile.word then
         Game.parse_room[mover.room] = true
         if mover.room ~= mover.tile.parent then
@@ -57,8 +59,10 @@ function Movement.move(dir)
 
       has_moved[mover.tile] = true
       
+      local has_belt = false
       for _,other in ipairs(mover.room:getTilesAt(mover.x, mover.y)) do
         if other:hasRule("move") then
+          has_belt = true
           if not mover.tile.belt_start then
             mover.tile.belt_start = {other.x, other.y}
             move_done = false
@@ -73,6 +77,9 @@ function Movement.move(dir)
             end
           end
         end
+      end
+      if not has_belt then
+        mover.tile.belt_start = nil
       end
     end
 
@@ -97,7 +104,7 @@ function Movement.canMove(tile, dir, enter, reason)
   end
 
   local current_mover = {tile = tile, x = x, y = y, dir = dir, room = room, reason = reason}
-  local movers = {current_mover}
+  local movers = {}
 
   if not room:inBounds(x, y) and room:hasRule("wall", "stop") then
     return false, {}
