@@ -116,8 +116,7 @@ function Movement.canMove(tile, dir, enter, reason)
         Utils.merge(movers, new_movers)
         entered = true
       end
-    end
-    if is_entry and not success and moveable then
+    elseif is_entry and ((not success) or (success and not pushable)) and moveable then
       local new_movers
       success, new_movers = Movement.canMove(other, Dir.reverse(dir), true, is_ladder and "exit" or "enter")
       if success then

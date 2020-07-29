@@ -18,10 +18,9 @@ function Level:new(name)
   self.tiles_by_key = {}
   self.rooms_by_id = {}
 
-  self.root = Room(7, 7)
-  self.root_key = self:addRoom(self.root)
+  self:generateDefault()
 
-  self:changeRoom(self.root_key)
+  self:traverse(self.start)
   self:spawnPlayer()
 end
 
@@ -49,35 +48,33 @@ function Level:spawnPlayer()
 end
 
 function Level:traverse(rooms)
-  if #rooms == 0 then
-    self:changeRoom(self.root_key)
-  else
-    self.room = self:getRoom(self.root_key)
-    for i,key in ipairs(rooms) do
-      for _,tile in ipairs(self.room.tiles_by_name["room"] or {}) do
-        if tile.key == key then
-          if i == #rooms then
-            self:changeRoom(tile.room_key)
-          else
-            self.room = self:getRoom(tile.room_key)
-          end
-          self.room.exit = tile
-          break
-        end
+  self:changeRoom(self.root_key, #rooms > 0)
+  for i,key in ipairs(rooms) do
+    for _,tile in ipairs(self.room.tiles_by_name["room"] or {}) do
+      if tile.key == key then
+        local room = self:getRoom(tile.room_key)
+        room.exit = tile
+        self:changeRoom(room, i ~= #rooms)
+        break
       end
     end
   end
 end
 
-function Level:changeRoom(room)
+function Level:changeRoom(room, small)
   if type(room) == "string" then
     room = self:getRoom(room)
   end
   self.room = room
-  for _,tile in ipairs(room.tiles_by_name["room"] or {}) do
-    if tile.room_key and not tile.room then
-      tile.room = self:getRoom(tile.room_key)
-      tile.room.exit = tile
+  if Gamestate.current() == Game then
+    self.room:parse()
+  end
+  if not small then
+    for _,tile in ipairs(room.tiles_by_name["room"] or {}) do
+      if tile.room_key and not tile.room then
+        tile.room = self:getRoom(tile.room_key)
+        tile.room.exit = tile
+      end
     end
   end
 end
@@ -104,7 +101,6 @@ end
 function Level:addRoom(room)
   if not room.key then
     room.key = self:newKey()
-    print("Generating key: "..room.key)
   end
   self.rooms[room.key] = room
   self.has_room[room.key] = true
@@ -171,6 +167,39 @@ function Level:load(name)
     self:traverse(self.start)
     self:spawnPlayer()
   end
+end
+
+function Level:generateDefault()
+  local room1 = Room(12, 12, {entry = {0, 11}})
+  self:addRoom(room1)
+
+  local x, y = 0, 0
+  for _,rule in ipairs(DEFAULT_RULES) do
+    if x+#rule-1 >= room1.width then
+      x = 0
+      y = y + 1
+    end
+    for i,word in ipairs(rule) do
+      local sides = {true, false, true, false} -- center (mod)
+      if i == 1 then
+        sides = {true, false, false, false} -- left (noun)
+      elseif i == #rule then
+        sides = {false, false, true, false} -- right (prop)
+      end
+      room1:addTile(Tile("rule", x, y, {word = word, sides = sides}))
+      x = x + 1
+    end
+  end
+
+  local room2 = Room(7, 7)
+  self:addRoom(room2)
+
+  local room2_portal = Tile("room", 11, 11, {room_key = room2.key})
+  room1:addTile(room2_portal)
+
+  self.start = {room2_portal.key}
+  self.root = room1
+  self.root_key = room1.key
 end
 
 return Level

@@ -12,3 +12,14 @@ DIR_REVERSE = {
   [3] = 1,
   [4] = 2
 }
+
+DEFAULT_RULES = {
+  {"flof", "play"},
+  {"wall", "stop"},
+  {"box", "push"},
+  {"ladder", "exit"},
+  {"room", "push"},
+  {"rule", "push"}
+}
+
+TILE_ACTIVATORS = {"box", "flof", "ladder", "room", "rule", "wall"}

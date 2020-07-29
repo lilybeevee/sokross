@@ -19,6 +19,7 @@ function Editor:enter()
   self.painting = false
 
   self.room_tree = {}
+  self:buildRoomTree()
 end
 
 function Editor:shift(ox, oy)
@@ -62,9 +63,17 @@ function Editor:validateTiles(width, height)
   end
 end
 
+function Editor:buildRoomTree()
+  local current_room = Level.room
+  while current_room.exit do
+    table.insert(self.room_tree, 1, current_room.exit)
+    current_room = current_room.exit.parent
+  end
+end
+
 function Editor:keypressed(key)
   if key == "tab" then
-    Gamestate.push(Selector)
+    self:openTileSelector()
   elseif key == "q" then
     if love.keyboard.isDown("ctrl") then
       Level.start = {}
@@ -106,12 +115,7 @@ function Editor:keypressed(key)
     Gamestate.switch(Game)
   elseif key == "o" and love.keyboard.isDown("ctrl") then
     Level:load("test")
-    local current_room = Level.room
-    while current_room.exit do
-      --print("exiting to: "..current_room.exit.parent.key)
-      table.insert(self.room_tree, 1, current_room.exit)
-      current_room = current_room.exit.parent
-    end
+    self:buildRoomTree()
   end
 end
 
@@ -132,6 +136,8 @@ function Editor:mousepressed(x, y, btn)
           table.insert(self.room_tree, tile)
           Level:changeRoom(tile.room_key)
           return
+        elseif tile.name == "tile" then
+          self:selectTileActivator(tile)
         end
       end
     end
@@ -190,6 +196,57 @@ function Editor:isStart()
     end
   end
   return true
+end
+
+function Editor:selectTileActivator(maintile)
+  local tiles = {}
+
+  table.insert(tiles, Tile("tile", 0, 0, {parent = Level.room}))
+  for _,activator in ipairs(TILE_ACTIVATORS) do
+    table.insert(tiles, Tile("tile", 0, 0, {activator = activator, parent = Level.room}))
+  end
+
+  Gamestate.push(Selector, tiles, function(tile)
+    maintile.activator = tile.activator
+  end)
+end
+
+function Editor:openTileSelector()
+  local tiles = {}
+  local added_word = {}
+
+  local function addTile(name, word)
+    if word and added_word[word] then
+      return
+    elseif word then
+      added_word[word] = true
+    end
+    local tile = Tile(name, 0, 0, {word = word, parent = Level.room})
+    table.insert(tiles, tile)
+  end
+
+  for _,data in ipairs(Assets.tiles_list) do
+    local name = data.name
+    if not data.unselectable then
+      addTile(name)
+      if Assets.words[name] then
+        addTile("rule", name)
+      end
+      if data.property then
+        addTile("rule", data.property)
+      end
+    end
+  end
+  for _,data in ipairs(Assets.words_list) do
+    local name = data.name
+    if not data.unselectable then
+      addTile("rule", name)
+    end
+  end
+
+  Gamestate.push(Selector, tiles, function(tile)
+    self.brush = tile:copy()
+  end)
 end
 
 function Editor:getTransform()

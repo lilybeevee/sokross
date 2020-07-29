@@ -18,9 +18,9 @@ function Tile:init(name, x, y, o)
   else
     self.key = Level.tile_key + 1
     Level.tile_key = Level.tile_key + 1
-    Level.tiles_by_key[self.key] = Level.tiles_by_key[self.key] or {}
-    table.insert(Level.tiles_by_key[self.key], self)
   end
+  Level.tiles_by_key[self.key] = Level.tiles_by_key[self.key] or {}
+  table.insert(Level.tiles_by_key[self.key], self)
 
   self.parent = o.parent
   self.name = name
@@ -32,6 +32,7 @@ function Tile:init(name, x, y, o)
   self.dir = o.dir or 1
   self.room_key = o.room_key
   self.room = o.room
+  self.activator = o.activator
   
   if o.word then
     self.wordname = o.word
@@ -59,8 +60,9 @@ function Tile:init(name, x, y, o)
 
   self.walk_frame = false
   
-  self.active = false
-  self.active_sides = {false, false, false, false}
+  self.active = false -- for valid rules
+  self.active_sides = {false, false, false, false} -- for rule connections
+  self.activated = false -- for tiles
 end
 
 function Tile:update()
@@ -80,6 +82,17 @@ function Tile:update()
       end
     end
   end
+
+  if self.name == "tile" then
+    local prev_active = self.activated
+    self.activated = self:getActivated()
+
+    if self.activated and not prev_active then
+      Game.sound["click"] = true
+    elseif not self.activated and prev_active then
+      Game.sound["unclick"] = true
+    end
+  end
 end
 
 function Tile:remove()
@@ -94,7 +107,7 @@ function Tile:hasRule(effect)
 end
 
 function Tile:moveTo(x, y, room)
-  if room then
+  if room and self.parent ~= room then
     if self:hasRule("play") then
       room:enter()
     end
@@ -105,6 +118,7 @@ function Tile:moveTo(x, y, room)
   else
     Utils.removeFromTable(self.parent.tiles_by_pos[self.x..","..self.y], self)
     self.x, self.y = x, y
+    self.parent.tiles_by_pos[self.x..","..self.y] = self.parent.tiles_by_pos[self.x..","..self.y] or {}
     table.insert(self.parent.tiles_by_pos[self.x..","..self.y], self)
   end
 end
@@ -139,6 +153,19 @@ function Tile:getConnections(type)
     end
   end
   return inputs
+end
+
+function Tile:getActivated()
+  if self.name == "tile" then
+    local tiles = self.parent:getTilesAt(self.x, self.y)
+    for _,tile in ipairs(tiles) do
+      print(self.activator)
+      if tile ~= self and (not self.activator or tile.name == self.activator) then
+        return true
+      end
+    end
+  end
+  return false
 end
 
 function Tile:draw(palette)
@@ -216,6 +243,15 @@ function Tile:draw(palette)
     local sprites = self.tile.sprites
     local colors = self.tile.colors
 
+    if self.name == "tile" then
+      if self.activator then
+        sprites = {"tile_"..self.activator}
+      end
+      if self.activated then
+        colors = {{5, 3}}
+      end
+    end
+
     for i,spritename in ipairs(sprites) do
       palette:setColor(colors[i][1], colors[i][2])
 
@@ -230,12 +266,23 @@ function Tile:draw(palette)
   love.graphics.pop()
 end
 
+function Tile:getHasSides()
+  if self.sides then
+    local has_sides = {}
+    for i = 1, 4 do
+      has_sides[i] = self.sides[i] ~= "none"
+    end
+    return has_sides
+  end
+end
+
 function Tile:copy()
   local tile = Tile(self.name, self.x, self.y, {
     dir = self.dir,
     word = self.word and self.word.name or nil,
-    sides = Utils.copy(self.sides),
-    room_key = self.room_key
+    sides = self:getHasSides(),
+    room_key = self.room_key,
+    activator = self.activator
   })
   if tile.room_key then
     tile.room = Level:getRoom(tile.room_key)
@@ -255,13 +302,12 @@ function Tile:save()
   end
   if self.word then
     data.word = self.word.name
-    if not self.sides[1] or not self.sides[2] or not self.sides[3] or not self.sides[4] then
-      data.sides = self.sides
-    end
+    data.sides = self:getHasSides()
   end
   if self.room_key then
     data.room = self.room_key
   end
+  data.activator = self.activator
 
   return data
 end
@@ -273,6 +319,7 @@ function Tile.load(data)
     word = data.word,
     sides = data.sides,
     room_key = data.room,
+    activator = data.activator,
   })
 end
 

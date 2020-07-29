@@ -150,6 +150,12 @@ function Assets.addTiles()
       colors = {{4, 2}},
       layer = 1,
     },
+    {
+      name = "tile",
+      sprites = {"tile"},
+      colors = {{0, 2}},
+      layer = 1,
+    },
   }
 
   Assets.tiles = {}
@@ -202,6 +208,17 @@ function Assets.addWords()
       name = "exit",
       type = "prop",
       color = 5,
+      dark = true,
+    },
+    {
+      name = "rule",
+      type = "noun",
+      color = 2,
+    },
+    {
+      name = "tile",
+      type = "noun",
+      color = 0,
       dark = true,
     },
     {

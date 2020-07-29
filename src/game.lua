@@ -91,21 +91,25 @@ function Game:doTurn(dir)
   Movement.move(dir)
   self:reparse()
   Level.room:updateTiles()
+  self:playSounds()
+end
 
+function Game:playSounds()
   if self.sound["enter"] then
     Assets.playSound("enter")
   elseif self.sound["exit"] then
     Assets.playSound("exit")
   elseif self.sound["push"] then
-    if self.sound["click"] then
-      Assets.playSound("push", 0.5)
-      Assets.playSound("click", 0.5)
-    elseif self.sound["unclick"] then
-      Assets.playSound("push", 0.5)
-      Assets.playSound("unclick", 0.5)
+    if self.sound["click"] or self.sound["unclick"] then
+      Assets.playSound("push", 0.75)
     else
-      Assets.playSound("push", 0.5)
+      Assets.playSound("push")
     end
+  end
+  if self.sound["click"] then
+    Assets.playSound("click", 0.75)
+  elseif self.sound["unclick"] then
+    Assets.playSound("unclick", 0.75)
   end
   self.sound = {}
 end

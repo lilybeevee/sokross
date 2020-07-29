@@ -30,6 +30,7 @@ function Undo:back(count)
     end
   end
   Level.room:updateTiles()
+  Game:playSounds()
 end
 
 function Undo:doUndo(undo)
