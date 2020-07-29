@@ -39,10 +39,12 @@ function Game:keypressed(key)
 end
 
 function Game:doTurn(dir)
+  self.update_room = {}
   Undo:new()
   self.turn = self.turn + 1
   Movement.move(dir)
   self:reparse()
+  self:doTransitions()
   Level.room:updateTiles()
   self:checkWin()
   self:playSounds()
@@ -85,6 +87,62 @@ function Game:reparse()
     end
   end
   self.parse_room = {}
+end
+
+function Game:doTransitions()
+  local transitions_done = false
+  local moved_tile = {}
+
+  while not transitions_done do
+    local rooms = self.update_room
+    self.update_room = {}
+
+    transitions_done = true
+
+    for room,_ in pairs(rooms) do
+      for _,exitrule in ipairs(room:getRules(nil, "exit")) do
+        for _,tile in ipairs(room:getTilesByName(exitrule.target)) do
+          if tile.parent.exit then
+            for _,other in ipairs(room:getTilesAt(tile.x, tile.y)) do
+              if other ~= tile and not other:hasRule("flat") then
+                moved_tile[tile] = moved_tile[tile] or {}
+                if not moved_tile[tile][other] then
+                  other:moveTo(tile.parent.exit.x, tile.parent.exit.y, tile.parent:getParent())
+                  moved_tile[tile][other] = true
+                else
+                  other:goToParadox()
+                end
+                transitions_done = false
+              end
+            end
+          end
+        end
+      end
+
+      for _,tile in ipairs(room:getTilesByName("room")) do
+        if tile.room_key then
+          for _,other in ipairs(room:getTilesAt(tile.x, tile.y)) do
+            if other ~= tile and not other:hasRule("flat") then
+              moved_tile[tile] = moved_tile[tile] or {}
+              if not moved_tile[tile][other] then
+                if not tile.room then
+                  tile.room = Level:getRoom(tile.room_key)
+                  tile.room.exit = tile
+                  tile.room:parse()
+                end
+                local ex, ey = tile.room:getEntry()
+                other:moveTo(ex, ey, tile.room)
+                moved_tile[tile][other] = true
+              else
+                other:goToParadox()
+              end
+              transitions_done = false
+            end
+          end
+        end
+      end
+    end
+  end
 end
 
 function Game:checkWin()

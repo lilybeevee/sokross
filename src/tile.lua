@@ -58,6 +58,7 @@ function Tile:init(name, x, y, o)
     end
   end
 
+  self.first_update = true
   self.walk_frame = false
   
   self.active = false -- for valid rules
@@ -74,11 +75,13 @@ function Tile:update()
       self.active_sides[conn[2]] = true
     end
 
-    for i = 1, 4 do
-      if self.active_sides[i] and not prev_active[i] then
-        Game.sound["click"] = true
-      elseif prev_active[i] and not self.active_sides[i] then
-        Game.sound["unclick"] = true
+    if not self.first_update then
+      for i = 1, 4 do
+        if self.active_sides[i] and not prev_active[i] then
+          Game.sound["click"] = true
+        elseif prev_active[i] and not self.active_sides[i] then
+          Game.sound["unclick"] = true
+        end
       end
     end
   end
@@ -87,12 +90,15 @@ function Tile:update()
     local prev_active = self.activated
     self.activated = self:getActivated()
 
-    if self.activated and not prev_active then
-      Game.sound["click"] = true
-    elseif not self.activated and prev_active then
-      Game.sound["unclick"] = true
+    if not self.first_update then
+      if self.activated and not prev_active then
+        Game.sound["click"] = true
+      elseif not self.activated and prev_active then
+        Game.sound["unclick"] = true
+      end
     end
   end
+  self.first_update = false
 end
 
 function Tile:remove()
@@ -121,17 +127,24 @@ function Tile:moveTo(x, y, room)
     self.parent.tiles_by_pos[self.x..","..self.y] = self.parent.tiles_by_pos[self.x..","..self.y] or {}
     table.insert(self.parent.tiles_by_pos[self.x..","..self.y], self)
   end
+  if room then
+    Game.update_room[room] = true
+  end
 end
 
-function Tile:goToParadox()
+function Tile:getParadoxEntry()
   if self.parent.paradox_room then
-    self:moveTo(self.x, self.y, self.parent.paradox_room)
+    return self.x, self.y, self.parent.paradox_room
   else
     local new_paradox = Level:getRoom(self.parent.paradox_room_key or Level.paradox_room_key)
     self.parent.paradox_room = new_paradox
     new_paradox.exit = self.parent.exit
-    self:moveTo(self.x, self.y, new_paradox)
+    return self.x, self.y, new_paradox
   end
+end
+
+function Tile:goToParadox()
+  self:moveTo(self:getParadoxEntry())
 end
 
 function Tile:getColor()

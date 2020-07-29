@@ -53,6 +53,7 @@ function Level:traverse(rooms)
     for _,tile in ipairs(self.room.tiles_by_name["room"] or {}) do
       if tile.key == key then
         local room = self:getRoom(tile.room_key)
+        tile.room = room
         room.exit = tile
         self:changeRoom(room, i ~= #rooms)
         break
@@ -100,15 +101,16 @@ end
 
 function Level:addRoom(room)
   if not room.key then
-    room.key = self:newKey()
+    local prefix = room.paradox and "paradox" or "room"
+    room.key = prefix..self:newKey()
   end
   self.rooms[room.key] = room
   self.has_room[room.key] = true
   return room.key
 end
 
-function Level:newKey()
-  local key = string.format("room%04d", self.room_key)
+function Level:newKey(prefix)
+  local key = string.format("%04d", self.room_key)
   self.room_key = self.room_key + 1
   return key
 end

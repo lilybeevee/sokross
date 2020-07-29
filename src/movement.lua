@@ -32,9 +32,7 @@ function Movement.move(dir)
       end
     end
 
-    print("moving!!!!!!!!!!!!!!!!!")
     for _,mover in ipairs(movers) do
-      print("moving: "..mover.tile.key)
       if mover.tile.word then
         Game.parse_room[mover.room] = true
         if mover.room ~= mover.tile.parent then
@@ -93,7 +91,7 @@ function Movement.move(dir)
   end
 end
 
-function Movement.canMove(tile, dir, enter, reason)
+function Movement.canMove(tile, dir, enter, reason, already_entered)
   local x, y, room
   if not enter then
     local dx, dy = Dir.toPos(dir)
@@ -102,6 +100,7 @@ function Movement.canMove(tile, dir, enter, reason)
   else
     x, y, room = Movement.getNextTile(tile, dir)
   end
+  already_entered = already_entered or {}
 
   local current_mover = {tile = tile, x = x, y = y, dir = dir, room = room, reason = reason}
   local movers = {}
@@ -135,13 +134,18 @@ function Movement.canMove(tile, dir, enter, reason)
 
     if can_enter and not (success and pushable) then
       local new_movers
-      success, new_movers = Movement.canMove(tile, dir, true, other_ladder and "exit" or "enter")
-      if success then
-        current_mover = table.remove(new_movers, 1)
-        Utils.merge(movers, new_movers)
-        entered = true
+      if already_entered[other] then
+        current_mover.x, current_mover.y, current_mover.room = tile:getParadoxEntry()
+      else
+        already_entered[other] = true
+        success, new_movers = Movement.canMove(tile, dir, true, other_ladder and "exit" or "enter", already_entered)
+        if success then
+          current_mover = table.remove(new_movers, 1)
+          Utils.merge(movers, new_movers)
+          entered = true
+        end
       end
-    elseif is_entry and ((not success) or (success and not pushable)) and moveable then
+    elseif is_entry and not success and moveable then
       local new_movers
       success, new_movers = Movement.canMove(other, Dir.reverse(dir), true, is_ladder and "exit" or "enter")
       if success then

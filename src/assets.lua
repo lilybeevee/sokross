@@ -241,6 +241,12 @@ function Assets.addWords()
       color = 1,
     },
     {
+      name = "flat",
+      type = "prop",
+      color = 7,
+      dark = true,
+    },
+    {
       name = "not",
       type = "mod",
       color = 3,
