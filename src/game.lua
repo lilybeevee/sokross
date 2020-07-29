@@ -11,53 +11,6 @@ function Game:enter()
 
   Level.static = false
   Level:reset()
-  --[[Level:new("test")
-
-  local room1 = Room(9, 9, {key = "room1"})
-  Level:addRoom(room1)
-
-  room1:addTile(Tile("box", 3, 2))
-  room1:addTile(Tile("box", 5, 2))
-  room1:addTile(Tile("box", 6, 2))
-  room1:addTile(Tile("box", 5, 4))
-
-  room1:addTile(Tile("rule", 1, 6, {word = "box"}))
-  room1:addTile(Tile("rule", 3, 7, {word = "push"}))
-  room1:addTile(Tile("rule", 1, 3, {word = "not"}))
-  room1:addTile(Tile("rule", 2, 1, {word = "exit"}))
-  room1:addTile(Tile("rule", 1, 1, {word = "wall"}))
-
-  room1:addTile(Tile("room", 7, 7, {room_key = "room2"}))
-
-  local room2 = Room(6, 5, {key = "room2"})
-  Level:addRoom(room2)
-
-  room2:addTile(Tile("ladder", 1, 1))
-  room2:addTile(Tile("room", 4, 3, {room_key = "room1"}))
-
-
-  Level:changeRoom(Level:getRoom("room1"))
-  Level.room:addTile(Tile("flof", 3, 4))
-
-  --[[Level.room = Room(9, 9)
-
-  Level.room:addTile(Tile("box", 3, 2))
-  Level.room:addTile(Tile("box", 5, 2))
-  Level.room:addTile(Tile("box", 6, 2))
-  Level.room:addTile(Tile("box", 5, 4))
-
-  Level.room:addTile(Tile("flof", 3, 4))
-
-  Level.room:addTile(Tile("rule", 1, 6, {word = "box"}))
-  Level.room:addTile(Tile("rule", 3, 7, {word = "push"}))
-  Level.room:addTile(Tile("rule", 1, 3, {word = "not"}))
-  Level.room:addTile(Tile("rule", 2, 1, {word = "stop"}))
-  Level.room:addTile(Tile("rule", 1, 1, {word = "wall"}))
-
-  local inner_room = Room(6, 5, {x=7, y=7, parent=Level.room, layer=2})
-  inner_room:addTile(Tile("ladder", 1, 1))
-
-  Level.room:addTile(Tile("room", 7, 7, {room = inner_room}))]]
   
   Level.room:parse()
   Level.room:updateTiles()
@@ -80,7 +33,7 @@ function Game:keypressed(key)
     self:reparse()
   elseif key == "r" then
     Level:reset()
-  elseif key == "f2" then
+  elseif key == "return" then
     Gamestate.switch(Editor)
   end
 end
@@ -91,6 +44,7 @@ function Game:doTurn(dir)
   Movement.move(dir)
   self:reparse()
   Level.room:updateTiles()
+  self:checkWin()
   self:playSounds()
 end
 
@@ -131,6 +85,13 @@ function Game:reparse()
     end
   end
   self.parse_room = {}
+end
+
+function Game:checkWin()
+  for _,tile in ipairs(Level.room:getTilesByName("tile")) do
+    if not tile:getActivated() then return end
+  end
+  Level.room:win()
 end
 
 function Game:getTransform()

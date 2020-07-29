@@ -147,6 +147,24 @@ function Room:draw()
   end
 end
 
+function Room:win()
+  local has_exit = false
+  for _,exitrule in ipairs(self:getRules(nil, "exit")) do
+    if #self:getTilesByName(exitrule.target) > 0 then
+      has_exit = true
+      break
+    end
+  end
+  if has_exit then
+    Level:changeRoom(self:getParent())
+    Level.room:win()
+  else
+    self.won = true
+    --temporary, just return to editor
+    Gamestate.switch(Editor)
+  end
+end
+
 function Room:save()
   local tiles = {}
   for _,tile in ipairs(self.tiles) do

@@ -111,7 +111,7 @@ function Editor:keypressed(key)
     if #self.room_tree > 0 then
       Level:changeRoom(table.remove(self.room_tree, #self.room_tree).parent)
     end
-  elseif key == "f1" then
+  elseif key == "return" then
     Gamestate.switch(Game)
   elseif key == "o" and love.keyboard.isDown("ctrl") then
     Level:load("test")
