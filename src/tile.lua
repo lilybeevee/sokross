@@ -5,15 +5,15 @@ function Tile:init(name, x, y, o)
 
   if o.id then
     self.id = o.id
-  elseif Gamestate.current() == Game then
-    self.id = Game.tile_id
-    Game.tile_id = Game.tile_id + 1
-    Game.tiles_by_id[self.id] = self
+  elseif not Level.static then
+    self.id = Level.tile_id
+    Level.tile_id = Level.tile_id + 1
+    Level.tiles_by_id[self.id] = self
   else
     self.id = 0
   end
 
-  self.parent = nil
+  self.parent = o.parent
   self.name = name
   self.x = x
   self.y = y
@@ -21,6 +21,7 @@ function Tile:init(name, x, y, o)
   self.layer = self.tile.layer
 
   self.dir = o.dir or 1
+  self.room_key = o.room_key
   self.room = o.room
   
   if o.word then
@@ -53,9 +54,28 @@ function Tile:init(name, x, y, o)
   self.active_sides = {false, false, false, false}
 end
 
+function Tile:update()
+  if self.word then
+    local prev_active = Utils.copy(self.active_sides)
+
+    self.active_sides = {false, false, false, false}
+    for _,conn in ipairs(self:getConnections("out")) do
+      self.active_sides[conn[2]] = true
+    end
+
+    for i = 1, 4 do
+      if self.active_sides[i] and not prev_active[i] then
+        Game.sound["click"] = true
+      elseif prev_active[i] and not self.active_sides[i] then
+        Game.sound["unclick"] = true
+      end
+    end
+  end
+end
+
 function Tile:remove()
-  if Gamestate.current() == Game then
-    Game.tiles_by_id[self.id] = nil
+  if not Level.static then
+    Level.tiles_by_id[self.id] = nil
   end
 end
 
@@ -76,13 +96,6 @@ function Tile:moveTo(x, y, room)
     Utils.removeFromTable(self.parent.tiles_by_pos[self.x..","..self.y], self)
     self.x, self.y = x, y
     table.insert(self.parent.tiles_by_pos[self.x..","..self.y], self)
-  end
-
-  if self.room then
-    self.room.parent = self.parent
-    self.room.layer = self.parent.layer + 1
-    self.room.x = self.x
-    self.room.y = self.y
   end
 end
 
@@ -109,7 +122,7 @@ function Tile:getConnections(type)
         local rdir = Dir.reverse(dir)
         for _,tile in ipairs(self.parent:getTilesAt(self.x+dx, self.y+dy)) do
           if tile.word and tile.sides[rdir] ~= "none" and (type == "all" or tile.sides[rdir] == "all" or tile.sides[rdir] == othertype) then
-            table.insert(inputs, tile)
+            table.insert(inputs, {tile, dir})
           end
         end
       end
@@ -126,28 +139,34 @@ function Tile:draw(palette)
     love.graphics.rotate(math.rad((self.dir-1) * 90))
   end
 
-  if self.name == "room" and self.room then
-    local ipalette = Assets.palettes[self.room.palette]
-    ipalette:setColor(0, 1)
-    love.graphics.rectangle("fill", -TILE_SIZE/2, -TILE_SIZE/2, TILE_SIZE, TILE_SIZE)
+  if self.name == "room" then
+    if self.room then
+      local ipalette = Assets.palettes[self.room.palette]
+      ipalette:setColor(0, 1)
+      love.graphics.rectangle("fill", -TILE_SIZE/2, -TILE_SIZE/2, TILE_SIZE, TILE_SIZE)
 
-    love.graphics.push()
-    love.graphics.translate(-self.room.width, -self.room.height)
-    ipalette:setColor(0, 4)
-    love.graphics.rectangle("fill", 0, 0, self.room.width*2, self.room.height*2)
-    for x = 0, self.room.width-1 do
-      for y = 0, self.room.height-1 do
-        local color
-        if self.room.tiles_by_pos[x..","..y] and #self.room.tiles_by_pos[x..","..y] > 0 then
-          color = {self.room.tiles_by_pos[x..","..y][1]:getColor()}
-        end
-        if color then
-          ipalette:setColor(color[1], color[2])
-          love.graphics.rectangle("fill", x*2, y*2, 2, 2)
+      love.graphics.push()
+      love.graphics.translate(-self.room.width, -self.room.height)
+      ipalette:setColor(0, 4)
+      love.graphics.rectangle("fill", 0, 0, self.room.width*2, self.room.height*2)
+      for x = 0, self.room.width-1 do
+        for y = 0, self.room.height-1 do
+          local color
+          if self.room.tiles_by_pos[x..","..y] and #self.room.tiles_by_pos[x..","..y] > 0 then
+            color = {self.room.tiles_by_pos[x..","..y][1]:getColor()}
+          end
+          if color then
+            ipalette:setColor(color[1], color[2])
+            love.graphics.rectangle("fill", x*2, y*2, 2, 2)
+          end
         end
       end
+      love.graphics.pop()
+    else
+      love.graphics.setColor(1, 1, 1)
+      local sprite = Assets.sprites["tiles/room"]
+      love.graphics.draw(sprite, -sprite:getWidth()/2, -sprite:getHeight()/2)
     end
-    love.graphics.pop()
 
     palette:setColor(0, 1)
     love.graphics.setLineWidth(2)
@@ -199,6 +218,50 @@ function Tile:draw(palette)
   end
 
   love.graphics.pop()
+end
+
+function Tile:copy()
+  local tile = Tile(self.name, self.x, self.y, {
+    dir = self.dir,
+    word = self.word and self.word.name or nil,
+    sides = Utils.copy(self.sides),
+    room_key = self.room_key
+  })
+  if tile.room_key then
+    tile.room = Level:getRoom(tile.room_key)
+  end
+  return tile
+end
+
+function Tile:save()
+  local data = {}
+
+  data.name = self.name
+  data.x = self.x
+  data.y = self.y
+  if self.dir ~= 1 then
+    data.dir = self.dir
+  end
+  if self.word then
+    data.word = self.word.name
+    if not self.sides[1] or not self.sides[2] or not self.sides[3] or not self.sides[4] then
+      data.sides = self.sides
+    end
+  end
+  if self.room_key then
+    data.room = self.room_key
+  end
+
+  return data
+end
+
+function Tile.load(data)
+  return Tile(data.name, data.x, data.y, {
+    dir = data.dir,
+    word = data.word,
+    sides = data.sides,
+    room_key = data.room,
+  })
 end
 
 return Tile

@@ -1,10 +1,12 @@
 local Assets = {}
 Assets.sprites = {}
 Assets.palettes = {}
+Assets.sounds = {}
 
 function Assets.load()
   Assets.addSprites()
   Assets.addPalettes()
+  Assets.addSounds()
   Assets.addTiles()
   Assets.addWords()
 end
@@ -56,6 +58,9 @@ function Assets.addPalettes(d)
       palette.setColor = function(self, x, y)
         love.graphics.setColor(unpack(self[x][y]))
       end
+      palette.getColor = function(self, x, y)
+        return unpack(self[x][y])
+      end
       Assets.palettes[palettename] = palette
     elseif love.filesystem.getInfo(dir .. "/" .. file).type == "directory" then
       local newdir = file
@@ -67,25 +72,51 @@ function Assets.addPalettes(d)
   end
 end
 
+function Assets.addSounds(d)
+  local dir = "assets/sounds"
+  if d then
+    dir = dir .. "/" .. d
+  end
+  local files = love.filesystem.getDirectoryItems(dir)
+  for _,file in ipairs(files) do
+    if string.sub(file, -4) == ".wav" or string.sub(file, -4) == ".ogg" then
+      local soundname = string.sub(file, 1, -5)
+      if d then
+        soundname = d .. "/" .. soundname
+      end
+      Assets.sounds[soundname] = love.audio.newSource(dir .. "/" .. file, "static")
+    elseif love.filesystem.getInfo(dir .. "/" .. file).type == "directory" then
+      local newdir = file
+      if d then
+        newdir = d .. "/" .. newdir
+      end
+      Assets.addSounds(newdir)
+    end
+  end
+end
+
+function Assets.playSound(sound, vol)
+  local instance = Assets.sounds[sound]:play()
+  instance:setVolume(vol or 1)
+  return instance
+end
+
 function Assets.addTiles()
-  local tiles = {
+  Assets.tiles_list = {
     {
       name = "rule",
       sprites = {"rule"},
       colors = {{0, 3}},
       layer = 5,
-    },
-    {
-      name = "room",
-      sprites = {"rect"},
-      colors = {{4, 2}},
-      layer = 1,
+      unselectable = true,
     },
     {
       name = "wall",
       sprites = {"rect"},
       colors = {{0, 1}},
       layer = 1,
+
+      property = "stop",
     },
     {
       name = "flof",
@@ -94,29 +125,41 @@ function Assets.addTiles()
       layer = 4,
       walk = true,
       rotate = true,
+
+      property = "play",
     },
     {
       name = "box",
       sprites = {"box_base", "box_shade"},
       colors = {{3, 2}, {3, 1}},
       layer = 3,
+
+      property = "push",
     },
     {
       name = "ladder",
       sprites = {"ladder"},
       colors = {{3, 2}},
       layer = 2,
+
+      property = "exit",
+    },
+    {
+      name = "room",
+      sprites = {"rect"},
+      colors = {{4, 2}},
+      layer = 1,
     },
   }
 
   Assets.tiles = {}
-  for _,tile in ipairs(tiles) do
+  for _,tile in ipairs(Assets.tiles_list) do
     Assets.tiles[tile.name] = tile
   end
 end
 
 function Assets.addWords()
-  local words = {
+  Assets.words_list = {
     {
       name = "flof",
       type = "noun",
@@ -162,6 +205,11 @@ function Assets.addWords()
       dark = true,
     },
     {
+      name = "room",
+      type = "noun",
+      color = 1,
+    },
+    {
       name = "not",
       type = "mod",
       color = 3,
@@ -175,7 +223,7 @@ function Assets.addWords()
   }
 
   Assets.words = {}
-  for _,word in ipairs(words) do
+  for _,word in ipairs(Assets.words_list) do
     Assets.words[word.name] = word
   end
 end

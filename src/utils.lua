@@ -1,5 +1,19 @@
 local Utils = {}
 
+--extend isDown to allow checking for both kinds of a key at once
+love.keyboard.orig_isDown = love.keyboard.isDown
+function love.keyboard.isDown(key)
+  if key == "ctrl" then
+    return love.keyboard.orig_isDown("lctrl") or love.keyboard.orig_isDown("rctrl")
+  elseif key == "shift" then
+    return love.keyboard.orig_isDown("lshift") or love.keyboard.orig_isDown("rshift")
+  elseif key == "alt" then
+    return love.keyboard.orig_isDown("lalt") or love.keyboard.orig_isDown("ralt")
+  else
+    return love.keyboard.orig_isDown(key)
+  end
+end
+
 function dump(o)
   if type(o) == 'table' then
     local s = '{'
@@ -55,6 +69,112 @@ function Utils.removeFromTable(t, value)
       return
     end
   end
+end
+
+function Utils.saveTable(t)
+  --this table contains all the lua values that are reasonable to be saved to a file.
+  
+  --possible lua types:  nil, boolean, number, string, userdata, function, thread, and table
+  
+  --userdata, function, and thread are unable to be written to and loaded from a file, so the
+  --save code errors if you try to save any of them.
+  
+  --nil, number, boolean, and string and each be written to a single value, and
+  --table can be written by calling the saveTable function recursively.
+  
+  local valid_type = {
+    ["nil"] = true,
+    ["number"] = true,
+    ["boolean"] = true,
+    ["string"] = true,
+    ["table"] = true,
+  }
+
+  local length = 0
+  for k,v in pairs(t) do
+    if not valid_type[type(k)] then error("Cannot save type: "..type(k)) end
+    if not valid_type[type(v)] then error("Cannot save type: "..type(v)) end
+    length = length + 1
+  end
+  local dictionary = #t ~= length
+
+  local data = love.data.pack("string", "BH", dictionary and 1 or 0, length)
+
+  local function saveVar(v)
+    if type(v) == "number" then
+      -- type 1
+      data = data..love.data.pack("string", "Bn", 1, v)
+    elseif type(v) == "string" then
+      -- type 2
+      data = data..love.data.pack("string", "Bz", 2, v)
+    elseif type(v) == "boolean" then
+      -- type 3
+      data = data..love.data.pack("string", "BB", 3, v and 1 or 0)
+    elseif type(v) == "table" then
+      -- type 4
+      data = data..love.data.pack("string", "B", 4) .. Utils.saveTable(v)
+    else
+      -- type 0 (nil)
+      data = data..love.data.pack("string", "B", 0)
+    end
+  end
+
+  if not dictionary then
+    for _,v in ipairs(t) do
+      saveVar(v)
+    end
+  else
+    for k,v in pairs(t) do
+      saveVar(k)
+      saveVar(v)
+    end
+  end
+
+  return data
+end
+
+function Utils.loadTable(data, pos)
+  local dict_byte, length, pos = love.data.unpack("BH", data, pos or 1)
+  local dictionary = dict_byte == 1
+
+  local t = {}
+
+  local function loadVar()
+    local type, var
+    type, pos = love.data.unpack("B", data, pos)
+
+    if type == 1 then
+      -- number
+      var, pos = love.data.unpack("n", data, pos)
+    elseif type == 2 then
+      -- string
+      var, pos = love.data.unpack("z", data, pos)
+    elseif type == 3 then
+      -- boolean
+      local byte_var
+      byte_var, pos = love.data.unpack("B", data, pos)
+      var = byte_var > 0
+    elseif type == 4 then
+       -- table
+      var, pos = Utils.loadTable(data, pos)
+    else
+      -- nil
+      var = nil
+    end
+
+    return var
+  end
+
+  for i = 1, length do
+    if not dictionary then
+      table.insert(t, loadVar())
+    else
+      local key = loadVar()
+      t[key] = loadVar()
+    end
+  end
+
+  return t, pos
 end
 
 return Utils

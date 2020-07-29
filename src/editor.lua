@@ -1,44 +1,44 @@
 local Editor = {}
 
-Editor.selector_groups = {
-  {}
-}
+function Editor:init()
+  Level.static = true
+  Level:new("test")
+end
 
 function Editor:enter()
   print("Sokoma editor")
 
   self.font = love.graphics.newFont(46)
-  self.room = Room(7, 7)
 
-  self.room:addTile(Tile("rule", 1, 1, {word = "flof"}))
-  self.room:addTile(Tile("rule", 2, 1, {word = "play"}))
+  Level.static = true
+  Level:reset()
 
-  self.room:addTile(Tile("rule", 1, 3, {word = "wall"}))
-  self.room:addTile(Tile("rule", 2, 3, {word = "stop"}))
+  self.brush_canvas = love.graphics.newCanvas(TILE_SIZE*4, TILE_SIZE*4)
+  self.brush = nil
+  self.placing_entrance = false
+  self.painting = false
 
-  self.room:addTile(Tile("flof", 2, 5, {dir = 2}))
+  self.room_tree = {}
 end
 
 function Editor:shift(ox, oy)
   local new_tiles = {}
-  for x = 0, self.room.width-1 do
-    for y = 0, self.room.height-1 do
-      new_tiles[x+ox..","..y+oy] = self.room.tiles[x..","..y]
-      for _,tile in ipairs(self.room.tiles[x..","..y]) do
+  for x = 0, Level.room.width-1 do
+    for y = 0, Level.room.height-1 do
+      new_tiles[x+ox..","..y+oy] = Level.room.tiles[x..","..y]
+      for _,tile in ipairs(Level.room.tiles[x..","..y]) do
         tile.x = tile.x + ox
         tile.y = tile.y + oy
       end
     end
   end
-  self.max_width = math.max(self.max_width, x+ox)
-  self.max_height = math.max(self.max_height, y+ox)
   self:validateTiles()
 end
 
 function Editor:resize(w, h, shiftx, shifty)
-  local old_w, old_h = self.room.width, self.room.height
-  self.room.width = w
-  self.room.height = h
+  local old_w, old_h = Level.room.width, Level.room.height
+  Level.room.width = w
+  Level.room.height = h
   if shiftx or shifty then
     self:shift(shiftx or 0, shifty or 0)
   end
@@ -48,33 +48,86 @@ end
 function Editor:validateTiles(width, height)
   -- loop through the whole map up to the specified width and height
   -- to remove oob tiles and create tables for all in-bounds positions
-  for x = 0, math.max(width or 0, self.room.width)-1 do
-    for y = 0, math.max(height or 0, self.room.height)-1 do
-      if not self.room:inBounds(x, y) then
-        for _,tile in ipairs(self.room:getTilesAt(x, y)) do
-          self.room:removeTile(tile)
+  for x = 0, math.max(width or 0, Level.room.width)-1 do
+    for y = 0, math.max(height or 0, Level.room.height)-1 do
+      if not Level.room:inBounds(x, y) then
+        for _,tile in ipairs(Level.room:getTilesAt(x, y)) do
+          Level.room:removeTile(tile)
         end
       end
     end
   end
+  if Level.room.entry and not Level.room:inBounds(Level.room:getEntry()) then
+    Level.room.entry = nil
+  end
 end
 
 function Editor:keypressed(key)
-  if key == "right" and love.keyboard.isDown("lctrl") then
-    self:resize(self.room.width+1, self.room.height)
-  elseif key == "left" and love.keyboard.isDown("lctrl") then
-    self:resize(self.room.width-1, self.room.height)
-  elseif key == "down" and love.keyboard.isDown("lctrl") then
-    self:resize(self.room.width, self.room.height+1)
-  elseif key == "up" and love.keyboard.isDown("lctrl") then
-    self:resize(self.room.width, self.room.height-1)
+  if key == "tab" then
+    Gamestate.push(Selector)
+  elseif key == "q" then
+    self.placing_entrance = not self.placing_entrance
+  elseif key == "right" and love.keyboard.isDown("ctrl") then
+    self:resize(Level.room.width+1, Level.room.height)
+  elseif key == "left" and love.keyboard.isDown("ctrl") then
+    self:resize(Level.room.width-1, Level.room.height)
+  elseif key == "down" and love.keyboard.isDown("ctrl") then
+    self:resize(Level.room.width, Level.room.height+1)
+  elseif key == "up" and love.keyboard.isDown("ctrl") then
+    self:resize(Level.room.width, Level.room.height-1)
   elseif key == "=" then
-    self:resize(self.room.width+1, self.room.height+1)
+    self:resize(Level.room.width+1, Level.room.height+1)
   elseif key == "-" then
-    self:resize(self.room.width-1, self.room.height-1)
+    self:resize(Level.room.width-1, Level.room.height-1)
   elseif key == "`" then --debug
-    print(dump(self.room.tiles_by_layer))
+    print(dump(Level.room.tiles_by_layer))
+  elseif key == "escape" then
+    if #self.room_tree > 1 then
+      Level:changeRoom(self.room_tree[#self.room_tree])
+    elseif Level.room ~= Level.root then
+      self.room_tree = {}
+      Level:reset()
+    end
+  elseif key == "f1" then
+    Gamestate.switch(Game)
+  elseif key == "s" and love.keyboard.isDown("ctrl") then
+    Level:save()
+  elseif key == "o" and love.keyboard.isDown("ctrl") then
+    Level:load("test")
   end
+end
+
+function Editor:mousepressed(x, y, btn)
+  if btn == 1 then
+    if self.placing_entrance then
+      Level.room.entry = {self.mx, self.my}
+      self.placing_entrance = false
+      return
+    else
+      local tiles = Level.room:getTilesAt(self.mx, self.my)
+      for _,tile in ipairs(tiles) do
+        if tile.name == "room" then
+          if not tile.room_key then
+            local room = Room(7, 7)
+            tile.room_key = Level:addRoom(room)
+          end
+          Level:changeRoom(Level:getRoom(tile.room_key))
+          return
+        end
+      end
+    end
+  elseif btn == 3 then
+    local tiles = Level.room:getTilesAt(self.mx, self.my)
+    if #tiles > 0 then
+      self.brush = tiles[1]:copy()
+      return
+    end
+  end
+  painting = true
+end
+
+function Editor:mousereleased(x, y, btn)
+  painting = false
 end
 
 function Editor:update(dt)
@@ -83,24 +136,27 @@ function Editor:update(dt)
   self.mx = math.floor(self.mx / TILE_SIZE)
   self.my = math.floor(self.my / TILE_SIZE)
 
-  if love.mouse.isDown(1) then
-    self:placeTile(self.mx, self.my, "wall")
-  elseif love.mouse.isDown(2) then
+  if painting and love.mouse.isDown(1) and self.brush then
+    self:placeTile(self.mx, self.my)
+  elseif painting and love.mouse.isDown(2) then
     self:eraseTile(self.mx, self.my)
   end
 end
 
-function Editor:placeTile(x,y,name,o)
+function Editor:placeTile(x,y)
   self:eraseTile(x,y)
-  if self.room:inBounds(x,y) then
-    self.room:addTile(Tile(name,x,y,o))
+  if Level.room:inBounds(x,y) then
+    local new_tile = self.brush:copy()
+    new_tile.x = x
+    new_tile.y = y
+    Level.room:addTile(new_tile)
   end
 end
 
 function Editor:eraseTile(x,y)
-  if self.room:inBounds(x,y) then
-    for _,tile in ipairs(self.room:getTilesAt(x,y)) do
-      self.room:removeTile(tile)
+  if Level.room:inBounds(x,y) then
+    for _,tile in ipairs(Level.room:getTilesAt(x,y)) do
+      Level.room:removeTile(tile)
     end
   end
 end
@@ -109,7 +165,7 @@ function Editor:getTransform()
   local transform = love.math.newTransform()
   transform:translate(love.graphics.getWidth()/2, love.graphics.getHeight()/2)
   transform:scale(2, 2)
-  transform:translate(-self.room.width*TILE_SIZE/2, -self.room.height*TILE_SIZE/2)
+  transform:translate(-Level.room.width*TILE_SIZE/2, -Level.room.height*TILE_SIZE/2)
   return transform
 end
 
@@ -119,12 +175,46 @@ function Editor:draw()
   local text = "What is sokoma? Like what is that"
   love.graphics.print(text, love.graphics.getWidth()/2 - self.font:getWidth(text)/2, love.graphics.getHeight()/2 - self.font:getHeight()/2)
   
-  Assets.palettes[self.room.palette]:setColor(0, 1)
+  local palette = Assets.palettes[Level.room.palette]
+  palette:setColor(0, 1)
   love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
 
   love.graphics.applyTransform(self:getTransform())
 
-  self.room:draw()
+  Level.room:draw()
+
+  local starsprite = Assets.sprites["tiles/star"]
+  love.graphics.push()
+  love.graphics.translate(Vector.mul(TILE_SIZE, Level.room:getEntry()))
+  local r,g,b = palette:getColor(6, 3)
+  love.graphics.setColor(r,g,b,0.5)
+  love.graphics.draw(starsprite)
+  love.graphics.pop()
+
+  if self.brush or self.placing_entrance then
+    love.graphics.push()
+
+    love.graphics.setCanvas(self.brush_canvas)
+    love.graphics.clear()
+    love.graphics.origin()
+    love.graphics.translate(TILE_SIZE*2, TILE_SIZE*2)
+    love.graphics.scale(2, 2)
+    love.graphics.translate(-TILE_SIZE/2, -TILE_SIZE/2)
+    if self.brush then
+      self.brush:draw(palette)
+    else
+      palette:setColor(6, 3)
+      local sprite = Assets.sprites["tiles/star"]
+      love.graphics.draw(sprite)
+    end
+    love.graphics.setCanvas()
+    love.graphics.pop()
+
+    love.graphics.translate(self.mx*TILE_SIZE + TILE_SIZE/2, self.my*TILE_SIZE + TILE_SIZE/2)
+    love.graphics.scale(0.5, 0.5)
+    love.graphics.setColor(1, 1, 1, 0.5)
+    love.graphics.draw(self.brush_canvas, -self.brush_canvas:getWidth()/2, -self.brush_canvas:getHeight()/2)
+  end
 end
 
 return Editor

@@ -7,6 +7,7 @@ end
 
 function Rules:clear()
   self.rules = {}
+  self.raw_rules = {}
   self.not_rules = {}
   self.not_layers = 0
   self.new_active = {}
@@ -52,8 +53,8 @@ function Rules:parse()
   self.raw_rules = self:buildRaw()
 
   -- copy raw rules from above layers
-  if self.room.parent then
-    for _,raw in ipairs(self.room.parent.rules.raw_rules) do
+  if self.room.exit then
+    for _,raw in ipairs(self.room:getParent().rules.raw_rules) do
       table.insert(self.raw_rules, raw)
     end
   end
@@ -108,12 +109,11 @@ function Rules:buildRaw()
     -- make all words inactive unless they've been processed
     if not self.new_active[tile] then
       tile.active = false
-      tile.active_sides = {false, false, false, false}
     end
 
     -- only parse from nouns because rules can only start from nouns
     if tile.word.type == "noun" then
-      local function process(tile, current, processed, dirs)
+      local function process(tile, current, processed)
         -- stop processing this branch if we've looped around to
         -- a word we already processed before in this branch
         if processed[tile] then
@@ -133,9 +133,6 @@ function Rules:buildRaw()
           for _,v in ipairs(current) do
             table.insert(names, v.word.name)
             v.active = true
-            if dirs[v] then
-              v.active_sides[dirs[v]] = true
-            end
             self.new_active[v] = true
           end
           table.insert(raw_rules, names)
@@ -145,10 +142,7 @@ function Rules:buildRaw()
         -- loop through all words properly connected to the current tile and
         -- recursively process them into a new branch (copied from the current)
         for _,other in ipairs(tile:getConnections("in")) do
-          local new_dirs = Utils.copy(dirs)
-          local dir = Dir.fromPos(tile.x-other.x, tile.y-other.y)
-          new_dirs[other] = dir
-          process(other, Utils.copy(current), Utils.copy(processed), new_dirs)
+          process(other[1], Utils.copy(current), Utils.copy(processed))
         end
       end
       process(tile, {}, {}, {})

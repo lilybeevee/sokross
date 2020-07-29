@@ -29,6 +29,7 @@ function Undo:back(count)
       self.index = self.index - 1
     end
   end
+  Level.room:updateTiles()
 end
 
 function Undo:doUndo(undo)
@@ -39,8 +40,8 @@ function Undo:doUndo(undo)
   if action == "move" then
     local tileid, x, y, dir, roomid = undo[2], undo[3], undo[4], undo[5], undo[6]
 
-    local tile = Game.tiles_by_id[tileid]
-    local room = roomid and Game.rooms_by_id[roomid] or nil
+    local tile = Level.tiles_by_id[tileid]
+    local room = roomid and Level.rooms_by_id[roomid] or nil
 
     if tile.word then
       Game.parse_room[tile.parent] = true

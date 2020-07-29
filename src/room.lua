@@ -5,10 +5,10 @@ function Room:init(width, height, o)
 
   if o.id then
     self.id = o.id
-  elseif Gamestate.current() == Game then
-    self.id = Game.room_id
-    Game.room_id = Game.room_id + 1
-    Game.rooms_by_id[self.id] = self
+  elseif not Level.static then
+    self.id = Level.room_id
+    Level.room_id = Level.room_id + 1
+    Level.rooms_by_id[self.id] = self
   else
     self.id = 0
   end
@@ -16,11 +16,10 @@ function Room:init(width, height, o)
   self.width = width
   self.height = height
 
+  self.key = o.key
   self.palette = o.palette or "default"
-  self.x = o.x or 0
-  self.y = o.y or 0
-  self.parent = o.parent
-  self.layer = o.layer or 1
+  self.exit = o.exit
+  self.entry = o.entry
 
   self.tiles = {}
   self.tiles_by_pos = {}
@@ -35,8 +34,16 @@ function Room:init(width, height, o)
   self.last_parsed = 0
 end
 
-function Room:remove()
+function Room:getParent()
+  return self.exit and self.exit.parent
+end
 
+function Room:getLayer()
+  if not self:getParent() then
+    return 1
+  else
+    return self:getParent():getLayer() + 1
+  end
 end
 
 function Room:parse()
@@ -45,14 +52,18 @@ function Room:parse()
 end
 
 function Room:enter()
-  Game.room = self
-  if self.parent and self.parent.last_parsed > self.last_parsed then
-    self.rules:parse()
+  Level:changeRoom(self)
+  if self.last_parsed == 0 or (self.exit and self:getParent().last_parsed > self.last_parsed) then
+    self:parse()
   end
 end
 
 function Room:getEntry()
-  return math.ceil(self.width/2)-1, math.ceil(self.height/2)-1
+  if not self.entry then
+    return math.ceil(self.width/2)-1, math.ceil(self.height/2)-1
+  else
+    return unpack(self.entry)
+  end
 end
 
 function Room:addTile(tile)
@@ -80,6 +91,12 @@ function Room:removeTile(tile)
   Utils.removeFromTable(self.tiles_by_pos[tile.x..","..tile.y], tile)
   Utils.removeFromTable(self.tiles_by_name[tile.name], tile)
   Utils.removeFromTable(self.tiles_by_layer[tile.layer], tile)
+end
+
+function Room:updateTiles()
+  for _,tile in ipairs(self.tiles) do
+    tile:update()
+  end
 end
 
 function Room:getTilesAt(x, y)
@@ -128,6 +145,39 @@ function Room:draw()
       love.graphics.pop()
     end
   end
+end
+
+function Room:save()
+  local tiles = {}
+  for _,tile in ipairs(self.tiles) do
+    table.insert(tiles, tile:save())
+  end
+
+  local data = {}
+  data.width = self.width
+  data.height = self.height
+  data.key = self.key
+  if self.palette ~= "default" then
+    data.palette = self.palette
+  end
+  data.entry = self.entry
+  data.tiles = tiles
+  
+  return data
+end
+
+function Room.load(data)
+  local room = Room(data.width, data.height, {
+    key = data.key,
+    palette = data.palette,
+    entry = data.entry,
+  })
+
+  for _,tiledata in ipairs(data.tiles) do
+    room:addTile(Tile.load(tiledata))
+  end
+
+  return room
 end
 
 return Room

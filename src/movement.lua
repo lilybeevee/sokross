@@ -6,8 +6,12 @@ function Movement.move(dir)
   local moves = {}
   local has_moved = {}
 
-  for _,playrule in ipairs(Game.room:getRules(nil, "play")) do
-    for _,tile in ipairs(Game.room:getTilesByName(playrule.target)) do
+  local playsound_push = false
+  local playsound_enter = false
+  local playsound_exit = false
+
+  for _,playrule in ipairs(Level.room:getRules(nil, "play")) do
+    for _,tile in ipairs(Level.room:getTilesByName(playrule.target)) do
       table.insert(moves, {tile = tile, dir = dir})
     end
   end
@@ -19,7 +23,7 @@ function Movement.move(dir)
     local still_moving = {}
     local movers = {}
     for _,move in ipairs(moves) do
-      local success, new_movers = Movement.canMove(move.tile, move.dir)
+      local success, new_movers = Movement.canMove(move.tile, move.dir, false, "move")
       if success then
         move_done = false
         Utils.merge(movers, new_movers)
@@ -34,6 +38,14 @@ function Movement.move(dir)
         if mover.room ~= mover.tile.parent then
           Game.parse_room[mover.tile.parent] = true
         end
+      end
+
+      if mover.reason == "enter" then
+        Game.sound["enter"] = true
+      elseif mover.reason == "exit" then
+        Game.sound["exit"] = true
+      elseif mover.reason == "push" then
+        Game.sound["push"] = true
       end
 
       local undo_dir = mover.tile.dir ~= mover.dir and mover.tile.dir or nil
@@ -56,7 +68,7 @@ function Movement.move(dir)
   end
 end
 
-function Movement.canMove(tile, dir, enter)
+function Movement.canMove(tile, dir, enter, reason)
   local x, y, room
   if not enter then
     local dx, dy = Dir.toPos(dir)
@@ -66,7 +78,7 @@ function Movement.canMove(tile, dir, enter)
     x, y, room = Movement.getNextTile(tile, dir)
   end
 
-  local current_mover = {tile = tile, x = x, y = y, dir = dir, room = room}
+  local current_mover = {tile = tile, x = x, y = y, dir = dir, room = room, reason = reason}
   local movers = {current_mover}
 
   if not room:inBounds(x, y) and room:hasRule("wall", "stop") then
@@ -79,7 +91,7 @@ function Movement.canMove(tile, dir, enter)
       pushable = true
 
       local new_movers
-      success, new_movers = Movement.canMove(other, dir)
+      success, new_movers = Movement.canMove(other, dir, false, "push")
       if success then
         Utils.merge(movers, new_movers)
       end
@@ -90,12 +102,15 @@ function Movement.canMove(tile, dir, enter)
       success = true
     end
 
-    local is_entry = tile.room or (room.parent and tile:hasRule("exit"))
-    local can_enter = other.room or (room.parent and other:hasRule("exit"))
+    local is_ladder = not tile.room_key and room.exit and tile:hasRule("exit")
+    local is_entry = tile.room_key or is_ladder
+
+    local other_ladder = not other.room_key and room.exit and other:hasRule("exit")
+    local can_enter = other.room_key or other_ladder
 
     if can_enter and not (success and pushable) then
       local new_movers
-      success, new_movers = Movement.canMove(tile, dir, true)
+      success, new_movers = Movement.canMove(tile, dir, true, other_ladder and "exit" or "enter")
       if success then
         current_mover = table.remove(new_movers, 1)
         Utils.merge(movers, new_movers)
@@ -104,7 +119,7 @@ function Movement.canMove(tile, dir, enter)
     end
     if is_entry and not success and moveable then
       local new_movers
-      success, new_movers = Movement.canMove(other, Dir.reverse(dir), true)
+      success, new_movers = Movement.canMove(other, Dir.reverse(dir), true, is_ladder and "exit" or "enter")
       if success then
         Utils.merge(movers, new_movers)
       end
@@ -123,11 +138,16 @@ function Movement.getNextTile(tile, dir)
   local x, y = tile.x + dx, tile.y + dy
   
   for _,tile in ipairs(tile.parent:getTilesAt(x, y)) do
-    if tile.room then
+    if tile.room_key then
+      if not tile.room then
+        tile.room = Level:getRoom(tile.room_key)
+        tile.room.exit = tile
+        tile.room:parse()
+      end
       local ex, ey = tile.room:getEntry()
       return ex, ey, tile.room
-    elseif tile.parent.parent and tile:hasRule("exit") then
-      return tile.parent.x + dx, tile.parent.y + dy, tile.parent.parent
+    elseif tile.parent.exit and tile:hasRule("exit") then
+      return tile.parent.exit.x + dx, tile.parent.exit.y + dy, tile.parent:getParent()
     end
   end
   return x, y, tile.parent
