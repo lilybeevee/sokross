@@ -10,7 +10,7 @@ function Game:enter()
   self.parse_room = {}
 
   Level.static = false
-  Level:changeRoom(Level:getRoom(Level.root.key))
+  Level:reset()
   --[[Level:new("test")
 
   local room1 = Room(9, 9, {key = "room1"})

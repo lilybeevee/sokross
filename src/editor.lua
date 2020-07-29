@@ -66,7 +66,24 @@ function Editor:keypressed(key)
   if key == "tab" then
     Gamestate.push(Selector)
   elseif key == "q" then
-    self.placing_entrance = not self.placing_entrance
+    if love.keyboard.isDown("ctrl") then
+      Level.start = {}
+      for _,tile in ipairs(self.room_tree) do
+        table.insert(Level.start, tile.key)
+      end
+    else
+      self.placing_entrance = not self.placing_entrance
+    end
+  elseif key == "s" and love.keyboard.isDown("ctrl") then
+    Level:save()
+  elseif key == "d" and self.brush then
+    self.brush.dir = 1
+  elseif key == "s" and self.brush then
+    self.brush.dir = 2
+  elseif key == "a" and self.brush then
+    self.brush.dir = 3
+  elseif key == "w" and self.brush then
+    self.brush.dir = 4
   elseif key == "right" and love.keyboard.isDown("ctrl") then
     self:resize(Level.room.width+1, Level.room.height)
   elseif key == "left" and love.keyboard.isDown("ctrl") then
@@ -82,18 +99,19 @@ function Editor:keypressed(key)
   elseif key == "`" then --debug
     print(dump(Level.room.tiles_by_layer))
   elseif key == "escape" then
-    if #self.room_tree > 1 then
-      Level:changeRoom(self.room_tree[#self.room_tree])
-    elseif Level.room ~= Level.root then
-      self.room_tree = {}
-      Level:reset()
+    if #self.room_tree > 0 then
+      Level:changeRoom(table.remove(self.room_tree, #self.room_tree).parent)
     end
   elseif key == "f1" then
     Gamestate.switch(Game)
-  elseif key == "s" and love.keyboard.isDown("ctrl") then
-    Level:save()
   elseif key == "o" and love.keyboard.isDown("ctrl") then
     Level:load("test")
+    local current_room = Level.room
+    while current_room.exit do
+      --print("exiting to: "..current_room.exit.parent.key)
+      table.insert(self.room_tree, 1, current_room.exit)
+      current_room = current_room.exit.parent
+    end
   end
 end
 
@@ -111,7 +129,8 @@ function Editor:mousepressed(x, y, btn)
             local room = Room(7, 7)
             tile.room_key = Level:addRoom(room)
           end
-          Level:changeRoom(Level:getRoom(tile.room_key))
+          table.insert(self.room_tree, tile)
+          Level:changeRoom(tile.room_key)
           return
         end
       end
@@ -161,6 +180,18 @@ function Editor:eraseTile(x,y)
   end
 end
 
+function Editor:isStart()
+  if #Level.start ~= #self.room_tree then
+    return false
+  end
+  for i,key in ipairs(Level.start) do
+    if key ~= self.room_tree[i].key then
+      return false
+    end
+  end
+  return true
+end
+
 function Editor:getTransform()
   local transform = love.math.newTransform()
   transform:translate(love.graphics.getWidth()/2, love.graphics.getHeight()/2)
@@ -186,7 +217,12 @@ function Editor:draw()
   local starsprite = Assets.sprites["tiles/star"]
   love.graphics.push()
   love.graphics.translate(Vector.mul(TILE_SIZE, Level.room:getEntry()))
-  local r,g,b = palette:getColor(6, 3)
+  local r, g, b
+  if self:isStart() then
+    r,g,b = palette:getColor(7, 3)  
+  else
+    r,g,b = palette:getColor(6, 3)
+  end
   love.graphics.setColor(r,g,b,0.5)
   love.graphics.draw(starsprite)
   love.graphics.pop()
@@ -203,7 +239,11 @@ function Editor:draw()
     if self.brush then
       self.brush:draw(palette)
     else
-      palette:setColor(6, 3)
+      if self:isStart() then
+        palette:setColor(7, 3)
+      else
+        palette:setColor(6, 3)
+      end
       local sprite = Assets.sprites["tiles/star"]
       love.graphics.draw(sprite)
     end

@@ -4,19 +4,25 @@ Level.static = false
 
 function Level:new(name)
   self.name = name
-  self.next_key = 1
+  self.player = "flof"
   self.rooms = {}
   self.has_room = {}
+  self.start = {}
+
+  self.tile_key = 1
+  self.room_key = 1
 
   self.tile_id = 1
   self.room_id = 1
   self.tiles_by_id = {}
+  self.tiles_by_key = {}
   self.rooms_by_id = {}
 
   self.root = Room(7, 7)
   self.root_key = self:addRoom(self.root)
 
-  self:changeRoom(self:getRoom(self.root_key))
+  self:changeRoom(self.root_key)
+  self:spawnPlayer()
 end
 
 function Level:reset()
@@ -24,6 +30,7 @@ function Level:reset()
     local static_root = self.rooms[self.root_key]
     self.rooms = {}
     self.rooms[self.root_key] = static_root
+    self.tiles_by_key = {}
   end
 
   self.tile_id = 1
@@ -31,10 +38,41 @@ function Level:reset()
   self.tiles_by_id = {}
   self.rooms_by_id = {}
 
-  self:changeRoom(self:getRoom(self.root_key))
+  self:traverse(self.start)
+  self:spawnPlayer()
+end
+
+function Level:spawnPlayer()
+  if not Level.static then
+    self.room:addTile(Tile(self.player, self.room:getEntry()))
+  end
+end
+
+function Level:traverse(rooms)
+  if #rooms == 0 then
+    self:changeRoom(self.root_key)
+  else
+    self.room = self:getRoom(self.root_key)
+    for i,key in ipairs(rooms) do
+      for _,tile in ipairs(self.room.tiles_by_name["room"] or {}) do
+        if tile.key == key then
+          if i == #rooms then
+            self:changeRoom(tile.room_key)
+          else
+            self.room = self:getRoom(tile.room_key)
+          end
+          self.room.exit = tile
+          break
+        end
+      end
+    end
+  end
 end
 
 function Level:changeRoom(room)
+  if type(room) == "string" then
+    room = self:getRoom(room)
+  end
   self.room = room
   for _,tile in ipairs(room.tiles_by_name["room"] or {}) do
     if tile.room_key and not tile.room then
@@ -45,7 +83,6 @@ function Level:changeRoom(room)
 end
 
 function Level:getRoom(key)
-  print("Getting room: "..key)
   if self.has_room[key] then
     if self.rooms[key] then
       if not self.static then
@@ -54,7 +91,6 @@ function Level:getRoom(key)
         return self.rooms[key]
       end
     else
-      print("Loading room: "..key)
       local loadstr = love.filesystem.read("levels/"..self.name.."/"..key..".room")
       local room = Room.load(Utils.loadTable(loadstr))
       if self.static then
@@ -76,8 +112,8 @@ function Level:addRoom(room)
 end
 
 function Level:newKey()
-  local key = string.format("room%04d", self.next_key)
-  self.next_key = self.next_key + 1
+  local key = string.format("room%04d", self.room_key)
+  self.room_key = self.room_key + 1
   return key
 end
 
@@ -94,8 +130,11 @@ function Level:save()
 
   local info = {
     name = self.name,
+    player = self.player,
+    start = self.start,
     root = self.root.key,
-    next_key = self.next_key
+    tile_key = self.tile_key,
+    room_key = self.room_key
   }
   love.filesystem.write(dir.."level.json", JSON.encode(info))
 end
@@ -106,13 +145,17 @@ function Level:load(name)
 
     local info = JSON.decode(love.filesystem.read(dir.."level.json"))
     self.name = info.name or name
-    self.next_key = info.next_key or 1
+    self.player = info.player or "flof"
+    self.start = info.start or {}
+    self.room_key = info.room_key or 1
+    self.tile_key = info.tile_key or 1
 
     self.rooms = {}
     self.has_room = {}
 
     self.tile_id = 1
     self.room_id = 1
+    self.tiles_by_key = {}
     self.tiles_by_id = {}
     self.rooms_by_id = {}
 
@@ -124,7 +167,9 @@ function Level:load(name)
 
     self.root = self:getRoom(info.root)
     self.root_key = info.root
-    self:changeRoom(self.root)
+
+    self:traverse(self.start)
+    self:spawnPlayer()
   end
 end
 

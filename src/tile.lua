@@ -13,6 +13,15 @@ function Tile:init(name, x, y, o)
     self.id = 0
   end
 
+  if o.key then
+    self.key = o.key
+  else
+    self.key = Level.tile_key + 1
+    Level.tile_key = Level.tile_key + 1
+    Level.tiles_by_key[self.key] = Level.tiles_by_key[self.key] or {}
+    table.insert(Level.tiles_by_key[self.key], self)
+  end
+
   self.parent = o.parent
   self.name = name
   self.x = x
@@ -77,6 +86,7 @@ function Tile:remove()
   if not Level.static then
     Level.tiles_by_id[self.id] = nil
   end
+  Utils.removeFromTable(Level.tiles_by_key[self.key], self)
 end
 
 function Tile:hasRule(effect)
@@ -237,6 +247,7 @@ function Tile:save()
   local data = {}
 
   data.name = self.name
+  data.key = self.key
   data.x = self.x
   data.y = self.y
   if self.dir ~= 1 then
@@ -257,6 +268,7 @@ end
 
 function Tile.load(data)
   return Tile(data.name, data.x, data.y, {
+    key = data.key,
     dir = data.dir,
     word = data.word,
     sides = data.sides,
