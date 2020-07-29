@@ -293,9 +293,7 @@ function Editor:draw()
     love.graphics.translate(TILE_SIZE*2, TILE_SIZE*2)
     love.graphics.scale(2, 2)
     love.graphics.translate(-TILE_SIZE/2, -TILE_SIZE/2)
-    if self.brush then
-      self.brush:draw(palette)
-    else
+    if self.placing_entrance then
       if self:isStart() then
         palette:setColor(7, 3)
       else
@@ -303,6 +301,8 @@ function Editor:draw()
       end
       local sprite = Assets.sprites["tiles/star"]
       love.graphics.draw(sprite)
+    else
+      self.brush:draw(palette)
     end
     love.graphics.setCanvas()
     love.graphics.pop()
