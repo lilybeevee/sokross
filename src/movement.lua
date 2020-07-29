@@ -56,6 +56,24 @@ function Movement.move(dir)
       mover.tile.dir = mover.dir
 
       has_moved[mover.tile] = true
+      
+      for _,other in ipairs(mover.room:getTilesAt(mover.x, mover.y)) do
+        if other:hasRule("move") then
+          if not mover.tile.belt_start then
+            mover.tile.belt_start = {other.x, other.y}
+            move_done = false
+            table.insert(still_moving, {tile = mover.tile, dir = other.dir})
+          else
+            if other.x == mover.tile.belt_start[1] and other.y == mover.tile.belt_start[2] then
+              mover.tile:goToParadox()
+              mover.tile.belt_start = nil
+            else
+              move_done = false
+              table.insert(still_moving, {tile = mover.tile, dir = other.dir})
+            end
+          end
+        end
+      end
     end
 
     moves = still_moving

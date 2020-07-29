@@ -18,7 +18,7 @@ function Level:new(name)
   self.tiles_by_key = {}
   self.rooms_by_id = {}
 
-  self:generateDefault()
+  self:generateDefaults()
 
   self:traverse(self.start)
   self:spawnPlayer()
@@ -169,7 +169,7 @@ function Level:load(name)
   end
 end
 
-function Level:generateDefault()
+function Level:generateDefaults()
   local room1 = Room(12, 12, {entry = {0, 11}})
   self:addRoom(room1)
 
@@ -190,6 +190,10 @@ function Level:generateDefault()
       x = x + 1
     end
   end
+  
+  self.paradox_room = Room(7, 7, {paradox = true, palette = "paradox"})
+  self:addRoom(self.paradox_room)
+  self.paradox_room_key = self.paradox_room.key
 
   local room2 = Room(7, 7)
   self:addRoom(room2)

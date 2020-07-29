@@ -88,6 +88,7 @@ function Game:reparse()
 end
 
 function Game:checkWin()
+  if #Level.room:getTilesByName("tile") == 0 then return end
   for _,tile in ipairs(Level.room:getTilesByName("tile")) do
     if not tile:getActivated() then return end
   end
@@ -103,7 +104,7 @@ function Game:getTransform()
 end
 
 function Game:draw()
-  Assets.palettes[Level.room.palette]:setColor(0, 1)
+  Assets.palettes[Level.room.palette]:setColor(0, 5)
   love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
 
   love.graphics.applyTransform(self:getTransform())

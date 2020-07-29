@@ -18,8 +18,9 @@ DEFAULT_RULES = {
   {"wall", "stop"},
   {"box", "push"},
   {"ladder", "exit"},
+  {"belt", "move"},
   {"room", "push"},
-  {"rule", "push"}
+  {"rule", "push"},
 }
 
 TILE_ACTIVATORS = {"box", "flof", "ladder", "room", "rule", "wall"}

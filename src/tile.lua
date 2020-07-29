@@ -123,6 +123,17 @@ function Tile:moveTo(x, y, room)
   end
 end
 
+function Tile:goToParadox()
+  if self.parent.paradox_room then
+    self:moveTo(self.x, self.y, self.parent.paradox_room)
+  else
+    local new_paradox = Level:getRoom(self.parent.paradox_room_key or Level.paradox_room_key)
+    self.parent.paradox_room = new_paradox
+    new_paradox.exit = self.parent.exit
+    self:moveTo(self.x, self.y, new_paradox)
+  end
+end
+
 function Tile:getColor()
   if self.word then
     return self.word.color, self.word.dark and 2 or 3

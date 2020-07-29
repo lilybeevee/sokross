@@ -113,9 +113,8 @@ function Assets.addTiles()
     {
       name = "wall",
       sprites = {"rect"},
-      colors = {{0, 1}},
+      colors = {{0, 5}},
       layer = 1,
-
       property = "stop",
     },
     {
@@ -125,7 +124,6 @@ function Assets.addTiles()
       layer = 4,
       walk = true,
       rotate = true,
-
       property = "play",
     },
     {
@@ -133,7 +131,6 @@ function Assets.addTiles()
       sprites = {"box_base", "box_shade"},
       colors = {{3, 2}, {3, 1}},
       layer = 3,
-
       property = "push",
     },
     {
@@ -141,8 +138,15 @@ function Assets.addTiles()
       sprites = {"ladder"},
       colors = {{3, 2}},
       layer = 2,
-
       property = "exit",
+    },
+    {
+      name = "belt",
+      sprites = {"belt"},
+      colors = {{0, 2}},
+      layer = 2,
+      rotate = true,
+      property = "move",
     },
     {
       name = "room",
@@ -209,6 +213,16 @@ function Assets.addWords()
       type = "prop",
       color = 5,
       dark = true,
+    },
+    {
+      name = "belt",
+      type = "noun",
+      color = 7,
+    },
+    {
+      name = "move",
+      type = "prop",
+      color = 4,
     },
     {
       name = "rule",

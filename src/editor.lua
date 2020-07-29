@@ -83,6 +83,31 @@ function Editor:keypressed(key)
     else
       self.placing_entrance = not self.placing_entrance
     end
+  elseif key == "p" and love.keyboard.isDown("ctrl") then
+    if not Level.room.paradox_room_key then
+      if Level.room.paradox then
+        print("leaving paradox")
+        local non_paradox_room = Level:getRoom(Level.room.non_paradox_room_key)
+        Level:changeRoom(non_paradox_room)
+      else
+        print("creating paradox")
+        local new_paradox_room = Room(7, 7, {
+          paradox = true,
+          palette = "paradox",
+          non_paradox_room = Level.room,
+          non_paradox_room_key = Level.room.key,
+          exit = Level.room.exit}
+        )
+        Level:addRoom(new_paradox_room)
+        Level.room.paradox_room = new_paradox_room
+        Level.room.paradox_room_key = new_paradox_room.key
+        Level:changeRoom(new_paradox_room)
+      end
+    else
+      print("going to paradox")
+      local paradox_room = Level:getRoom(Level.room.paradox_room_key)
+      Level:changeRoom(paradox_room)
+    end
   elseif key == "s" and love.keyboard.isDown("ctrl") then
     Level:save()
   elseif key == "d" and self.brush then
@@ -112,6 +137,7 @@ function Editor:keypressed(key)
       Level:changeRoom(table.remove(self.room_tree, #self.room_tree).parent)
     end
   elseif key == "return" then
+    Level:save()
     Gamestate.switch(Game)
   elseif key == "o" and love.keyboard.isDown("ctrl") then
     Level:load("test")
@@ -264,7 +290,7 @@ function Editor:draw()
   love.graphics.print(text, love.graphics.getWidth()/2 - self.font:getWidth(text)/2, love.graphics.getHeight()/2 - self.font:getHeight()/2)
   
   local palette = Assets.palettes[Level.room.palette]
-  palette:setColor(0, 1)
+  palette:setColor(0, 5)
   love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
 
   love.graphics.applyTransform(self:getTransform())
