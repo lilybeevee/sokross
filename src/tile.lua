@@ -151,6 +151,7 @@ function Tile:getParadoxEntry()
     if self.parent.paradox then
       print("void")
       local new_void = Level:getRoom(Level.void_room_key)
+      self.parent.paradox_room = new_void
       new_void.exit = self.parent.exit
       local x, y = getCoordsTo(new_void)
       return x, y, new_void
@@ -159,11 +160,11 @@ function Tile:getParadoxEntry()
         print("heaven")
         local new_heaven = Level:getRoom(Level.heaven_room_key)
         new_heaven.exit = self.parent.exit
-        local x, y = getCoordsTo(new_heaven)
-        return x, y, new_heaven
+        return 2, 2, new_heaven
       else --send it to a void, it doesn't really matter since the player can't see it anyways
         print("void")
         local new_void = Level:getRoom(Level.void_room_key)
+        self.parent.paradox_room = new_void
         new_void.exit = self.parent.exit
         local x, y = getCoordsTo(new_void)
         return x, y, new_void
