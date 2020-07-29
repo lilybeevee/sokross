@@ -196,6 +196,15 @@ function Level:generateDefaults()
   self.paradox_room = Room(7, 7, {paradox = true, palette = "paradox"})
   self:addRoom(self.paradox_room)
   self.paradox_room_key = self.paradox_room.key
+  
+  self.void_room = Room(17, 13, {void = true})
+  self:addRoom(self.void_room)
+  self.void_room_key = self.void_room.key
+  
+  self.heaven_room = Room(9, 5, {heaven = true})
+  self:addRoom(self.heaven_room)
+  self.heaven_room:addTile(Tile("tile", 6, 2, {activator = "flof"}))
+  self.heaven_room_key = self.heaven_room.key
 
   local room2 = Room(7, 7)
   self:addRoom(room2)

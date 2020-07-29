@@ -26,6 +26,9 @@ function Room:init(width, height, o)
   self.paradox_room_key = o.paradox_room_key
   self.non_paradox_room = o.non_paradox_room
   self.non_paradox_room_key = o.non_paradox_room_key
+  
+  self.void = o.void
+  self.heaven = o.heaven
 
   self.tiles = {}
   self.tiles_by_pos = {}
@@ -134,17 +137,21 @@ function Room:draw()
 
   for x = 0, self.width-1 do
     for y = 0, self.height-1 do
-      if (x+y) % 2 == 0 then
-        if self.paradox then
-          palette:setColor(0, 0)
-        else
-          palette:setColor(0, 3)
-        end
+      if self.void then
+        love.graphics.setColor(0, 0, 0)
       else
-        if self.paradox then
-          palette:setColor(0, 1)
+        if (x+y) % 2 == 0 then
+          if self.paradox then
+            palette:setColor(0, 0)
+          else
+            palette:setColor(0, 3)
+          end
         else
-          palette:setColor(0, 4)
+          if self.paradox then
+            palette:setColor(0, 1)
+          else
+            palette:setColor(0, 4)
+          end
         end
       end
       love.graphics.rectangle("fill", x*TILE_SIZE, y*TILE_SIZE, TILE_SIZE, TILE_SIZE)
@@ -198,6 +205,8 @@ function Room:save()
   if self.paradox then data.paradox = self.paradox end
   data.paradox_room_key = self.paradox_room_key
   data.non_paradox_room_key = self.non_paradox_room_key
+  if self.void then data.void = self.void end
+  if self.heaven then data.heaven = self.heaven end
   data.entry = self.entry
   data.tiles = tiles
   
@@ -211,6 +220,8 @@ function Room.load(data)
     paradox = data.paradox,
     paradox_room_key = data.paradox_room_key,
     non_paradox_room_key = data.non_paradox_room_key,
+    void = data.void,
+    heaven = data.heaven,
     entry = data.entry,
   })
 

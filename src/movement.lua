@@ -23,12 +23,14 @@ function Movement.move(dir)
     local still_moving = {}
     local movers = {}
     for _,move in ipairs(moves) do
-      local success, new_movers = Movement.canMove(move.tile, move.dir, false, "move")
-      if success then
-        move_done = false
-        Utils.merge(movers, new_movers)
-      else
-        table.insert(still_moving, move)
+      if move.dir then
+        local success, new_movers = Movement.canMove(move.tile, move.dir, false, "move")
+        if success then
+          move_done = false
+          Utils.merge(movers, new_movers)
+        else
+          table.insert(still_moving, move)
+        end
       end
     end
 

@@ -35,6 +35,11 @@ function Game:keypressed(key)
     Level:reset()
   elseif key == "return" then
     Gamestate.switch(Editor)
+  elseif key == "`" then -- debug
+    self:doTurn()
+    for _,tile in ipairs(Level.room:getTilesByName("flof")) do
+      tile:goToParadox()
+    end
   end
 end
 

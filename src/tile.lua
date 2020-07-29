@@ -133,13 +133,49 @@ function Tile:moveTo(x, y, room)
 end
 
 function Tile:getParadoxEntry()
+  local function getCoordsTo(room)
+    local tf = Game:getTransform()
+    local old_x, old_y = tf:transformPoint(self.x*TILE_SIZE, self.y*TILE_SIZE)
+    local new_tf = love.math.newTransform()
+    new_tf:translate(love.graphics.getWidth()/2, love.graphics.getHeight()/2)
+    new_tf:scale(2, 2)
+    new_tf:translate(-room.width*TILE_SIZE/2, -room.height*TILE_SIZE/2)
+    local new_x, new_y = new_tf:inverseTransformPoint(old_x, old_y)
+    return math.floor(new_x/TILE_SIZE), math.floor(new_y/TILE_SIZE)
+  end
   if self.parent.paradox_room then
-    return self.x, self.y, self.parent.paradox_room
+    print("existing paradox")
+    local x, y = getCoordsTo(self.parent.paradox_room)
+    return x, y, self.parent.paradox_room
   else
-    local new_paradox = Level:getRoom(self.parent.paradox_room_key or Level.paradox_room_key)
-    self.parent.paradox_room = new_paradox
-    new_paradox.exit = self.parent.exit
-    return self.x, self.y, new_paradox
+    if self.parent.paradox then
+      print("void")
+      local new_void = Level:getRoom(Level.void_room_key)
+      new_void.exit = self.parent.exit
+      local x, y = getCoordsTo(new_void)
+      return x, y, new_void
+    elseif self.parent.void then
+      if self:hasRule("play") then
+        print("heaven")
+        local new_heaven = Level:getRoom(Level.heaven_room_key)
+        new_heaven.exit = self.parent.exit
+        local x, y = getCoordsTo(new_heaven)
+        return x, y, new_heaven
+      else --send it to a void, it doesn't really matter since the player can't see it anyways
+        print("void")
+        local new_void = Level:getRoom(Level.void_room_key)
+        new_void.exit = self.parent.exit
+        local x, y = getCoordsTo(new_void)
+        return x, y, new_void
+      end
+    else
+      print("paradox")
+      local new_paradox = Level:getRoom(self.parent.paradox_room_key or Level.paradox_room_key)
+      self.parent.paradox_room = new_paradox
+      new_paradox.exit = self.parent.exit
+      local x, y = getCoordsTo(new_paradox)
+      return x, y, new_paradox
+    end
   end
 end
 
