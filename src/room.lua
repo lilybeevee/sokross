@@ -155,13 +155,16 @@ function Room:win()
       break
     end
   end
-  if has_exit then
+  if has_exit and self:getParent() then
     Level:changeRoom(self:getParent())
     Level.room:win()
   else
     self.won = true
-    --temporary, just return to editor
-    Gamestate.switch(Editor)
+    if self:getParent() then
+      Level:changeRoom(self:getParent())
+    else -- ideally this can't happen unless you're just playtesting from editor
+      Gamestate.switch(Editor)
+    end
   end
 end
 
