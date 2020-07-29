@@ -159,7 +159,6 @@ function Tile:getActivated()
   if self.name == "tile" then
     local tiles = self.parent:getTilesAt(self.x, self.y)
     for _,tile in ipairs(tiles) do
-      print(self.activator)
       if tile ~= self and (not self.activator or tile.name == self.activator) then
         return true
       end
