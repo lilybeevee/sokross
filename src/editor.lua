@@ -166,7 +166,10 @@ function Editor:mousepressed(x, y, btn)
         for _,tile in ipairs(tiles) do
           if tile.name == "room" then
             if not tile.room_key then
-              local room = Room(7, 7)
+              local room = Room(7, 7, {
+                paradox = Level.room.paradox,
+                palette = Level.room.palette
+              })
               tile.room_key = Level:addRoom(room)
             end
             table.insert(self.room_tree, tile)

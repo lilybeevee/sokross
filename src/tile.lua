@@ -120,7 +120,7 @@ end
 
 function Tile:moveTo(x, y, room, dir)
   if not dir then
-    dir = Dir.fromPos(x-tile.x, y-tile.y) or tile.dir
+    dir = Dir.fromPos(x-self.x, y-self.y) or self.dir
   end
   self.dir = dir
 
@@ -253,13 +253,13 @@ function Tile:draw(palette)
 
   if self.name == "room" then
     local ipalette = Assets.palettes[self.room and self.room.palette or (self.parent and self.parent.palette or "default")]
-    ipalette:setColor(0, 1)
+    ipalette:setColor(8, 0)
     love.graphics.rectangle("fill", -TILE_SIZE/2, -TILE_SIZE/2, TILE_SIZE, TILE_SIZE)
 
     if self.room and (not self.locked or Gamestate.current() == Editor) then
       love.graphics.push()
       love.graphics.translate(-self.room.width, -self.room.height)
-      ipalette:setColor(0, 4)
+      ipalette:setColor(8, 2)
       love.graphics.rectangle("fill", 0, 0, self.room.width*2, self.room.height*2)
       for x = 0, self.room.width-1 do
         for y = 0, self.room.height-1 do
@@ -280,7 +280,7 @@ function Tile:draw(palette)
         love.graphics.rectangle("fill", -TILE_SIZE/2, -TILE_SIZE/2, TILE_SIZE, TILE_SIZE)
       end
     else
-      palette:setColor(0, 4)
+      palette:setColor(8, 2)
       local sprite
       if not self.locked then
         sprite = Assets.sprites["tiles/room"]
@@ -290,7 +290,7 @@ function Tile:draw(palette)
       love.graphics.draw(sprite, -sprite:getWidth()/2, -sprite:getHeight()/2)
     end
 
-    palette:setColor(0, 1)
+    palette:setColor(8, 0)
     love.graphics.setLineWidth(2)
     love.graphics.rectangle("line", -TILE_SIZE/2, -TILE_SIZE/2, TILE_SIZE, TILE_SIZE)
   elseif self.name == "line" then

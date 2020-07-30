@@ -1,12 +1,13 @@
 local Game = {}
 
+Game.sound = {}
+
 function Game:enter()
   print("Sokoma game")
 
   Undo:clear()
 
   self.turn = 0
-  self.sound = {}
   self.parse_room = {}
 
   Level.static = false
