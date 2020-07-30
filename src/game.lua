@@ -61,12 +61,16 @@ function Game:doTurn(dir)
 end
 
 function Game:playSounds()
-  if self.sound["enter"] then
+  if self.sound["paradox"] then
+    Assets.playSound("paradox")
+  elseif self.sound["enter"] then
     Assets.playSound("enter")
   elseif self.sound["exit"] then
     Assets.playSound("exit")
   elseif self.sound["push"] then
-    if self.sound["click"] or self.sound["unclick"] then
+    if self.sound["paradox push"] then
+      Assets.playSound("paradox push")
+    elseif self.sound["click"] or self.sound["unclick"] then
       Assets.playSound("push", 0.75)
     else
       Assets.playSound("push")

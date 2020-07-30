@@ -146,7 +146,8 @@ function Movement.canMove(tile, dir, enter, reason, already_entered)
     if can_enter and not (success and pushable) then
       local new_movers
       if already_entered[other] then
-        current_mover.x, current_mover.y, current_mover.room = tile:getParadoxEntry()
+        current_mover.x, current_mover.y, current_mover.room = tile.parent:getParadoxEntry(tile)
+        success = true
       else
         already_entered[other] = true
         success, new_movers = Movement.canMove(tile, dir, true, other_ladder and "exit" or "enter", already_entered)

@@ -204,6 +204,54 @@ function Room:draw()
   end
 end
 
+function Room:getParadoxEntry(tile)
+  local function getCoordsTo(room)
+    local tf = Game:getTransform()
+    local old_x, old_y = tf:transformPoint(tile.x*TILE_SIZE, tile.y*TILE_SIZE)
+    local new_tf = love.math.newTransform()
+    new_tf:translate(love.graphics.getWidth()/2, love.graphics.getHeight()/2)
+    new_tf:scale(2, 2)
+    new_tf:translate(-room.width*TILE_SIZE/2, -room.height*TILE_SIZE/2)
+    local new_x, new_y = new_tf:inverseTransformPoint(old_x, old_y)
+    return math.floor(new_x/TILE_SIZE), math.floor(new_y/TILE_SIZE)
+  end
+  if self.paradox_room then
+    print("existing paradox")
+    local x, y = getCoordsTo(self.paradox_room)
+    return x, y, self.paradox_room
+  else
+    if self.paradox then
+      print("void")
+      local new_void = Level:getRoom(Level.void_room_key)
+      self.paradox_room = new_void
+      new_void.exit = self.exit
+      local x, y = getCoordsTo(new_void)
+      return x, y, new_void
+    elseif self.void then
+      if tile:hasRule("play") then
+        print("heaven")
+        local new_heaven = Level:getRoom(Level.heaven_room_key)
+        new_heaven.exit = self.exit
+        return 2, 2, new_heaven
+      else --send it to a void, it doesn't really matter since the player can't see it anyways
+        print("void")
+        local new_void = Level:getRoom(Level.void_room_key)
+        self.paradox_room = new_void
+        new_void.exit = self.exit
+        local x, y = getCoordsTo(new_void)
+        return x, y, new_void
+      end
+    else
+      print("paradox")
+      local new_paradox = Level:getRoom(self.paradox_room_key or Level.paradox_room_key)
+      self.paradox_room = new_paradox
+      new_paradox.exit = self.exit
+      local x, y = getCoordsTo(new_paradox)
+      return x, y, new_paradox
+    end
+  end
+end
+
 function Room:win()
   local has_exit = false
   for _,exitrule in ipairs(self:getRules(nil, "exit")) do
