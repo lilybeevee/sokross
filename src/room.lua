@@ -63,6 +63,12 @@ function Room:parse()
   self.last_parsed = Game.turn
 end
 
+function Room:parseIfNecessary()
+  if self.last_parsed == 0 then
+    self:parse()
+  end
+end
+
 function Room:enter(tile, dir)
   Level:changeRoom(self)
   if tile.parent and tile.parent:getLayer() < self:getLayer() then

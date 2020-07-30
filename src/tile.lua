@@ -139,6 +139,7 @@ function Tile:moveTo(x, y, room, dir)
     table.insert(self.parent.tiles_by_pos[self.x..","..self.y], self)
   end
   if room then
+    room:parseIfNecessary()
     Game.update_room[room] = true
   end
 end
