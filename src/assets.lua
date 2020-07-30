@@ -113,7 +113,7 @@ function Assets.addTiles()
     {
       name = "wall",
       sprites = {"rect"},
-      colors = {{0, 5}},
+      colors = {{0, 0}},
       layer = 1,
       property = "stop",
     },

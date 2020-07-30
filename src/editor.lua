@@ -317,7 +317,7 @@ function Editor:draw()
   love.graphics.print(text, love.graphics.getWidth()/2 - self.font:getWidth(text)/2, love.graphics.getHeight()/2 - self.font:getHeight()/2)
   
   local palette = Assets.palettes[Level.room.palette]
-  palette:setColor(0, 5)
+  palette:setColor(8, 0)
   love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
 
   love.graphics.applyTransform(self:getTransform())

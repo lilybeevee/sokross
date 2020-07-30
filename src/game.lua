@@ -171,7 +171,7 @@ function Game:getTransform()
 end
 
 function Game:draw()
-  Assets.palettes[Level.room.palette]:setColor(0, 5)
+  Assets.palettes[Level.room.palette]:setColor(8, 0)
   love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
 
   love.graphics.applyTransform(self:getTransform())

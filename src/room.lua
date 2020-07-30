@@ -185,17 +185,9 @@ function Room:draw()
         love.graphics.setColor(0, 0, 0)
       else
         if (x+y) % 2 == 0 then
-          if self.paradox then
-            palette:setColor(0, 0)
-          else
-            palette:setColor(0, 3)
-          end
+          palette:setColor(8, 1)
         else
-          if self.paradox then
-            palette:setColor(0, 1)
-          else
-            palette:setColor(0, 4)
-          end
+          palette:setColor(8, 2)
         end
       end
       love.graphics.rectangle("fill", x*TILE_SIZE, y*TILE_SIZE, TILE_SIZE, TILE_SIZE)
