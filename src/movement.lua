@@ -54,8 +54,7 @@ function Movement.move(dir)
       local undo_room = mover.room.id ~= mover.tile.parent.id and mover.tile.parent.id or nil
       Undo:add("move", mover.tile.id, mover.tile.x, mover.tile.y, undo_dir, undo_room)
 
-      mover.tile:moveTo(mover.x, mover.y, mover.room)
-      mover.tile.dir = mover.dir
+      mover.tile:moveTo(mover.x, mover.y, mover.room, mover.dir)
 
       has_moved[mover.tile] = true
       
@@ -94,6 +93,15 @@ function Movement.move(dir)
 end
 
 function Movement.canMove(tile, dir, enter, reason, already_entered)
+  if tile.name == "room" then
+    local conns = tile:getConnections("line")
+    for _,conn in ipairs(conns) do
+      if conn[1].name == "line" then
+        return false, {}
+      end
+    end
+  end
+
   local x, y, room
   if not enter then
     local dx, dy = Dir.toPos(dir)
@@ -113,6 +121,7 @@ function Movement.canMove(tile, dir, enter, reason, already_entered)
 
   for _,other in ipairs(room:getTilesAt(x, y)) do
     local success, pushable, moveable = false, false, true
+
     if other:hasRule("push") then
       pushable = true
 
@@ -129,10 +138,10 @@ function Movement.canMove(tile, dir, enter, reason, already_entered)
     end
 
     local is_ladder = not tile.room_key and room.exit and tile:hasRule("exit")
-    local is_entry = tile.room_key or is_ladder
+    local is_entry = (tile.room_key and not tile.locked) or is_ladder
 
     local other_ladder = not other.room_key and room.exit and other:hasRule("exit")
-    local can_enter = other.room_key or other_ladder
+    local can_enter = (other.room_key and not other.locked) or other_ladder
 
     if can_enter and not (success and pushable) then
       local new_movers

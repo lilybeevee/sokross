@@ -15,7 +15,7 @@ function Selector:keypressed(key)
   end
 end
 
-function Selector:mousereleased(x, y, btn)
+function Selector:mousepressed(x, y, btn)
   if self.selected and self.tiles[self.selected] and btn == 1 then
     if self.func then
       self.func(self.tiles[self.selected])

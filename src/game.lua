@@ -13,6 +13,7 @@ function Game:enter()
   Level:reset()
   
   Level.room:parse()
+  Level.room:updateLines()
   Level.room:updateTiles()
   self.sound = {}
 
@@ -33,6 +34,8 @@ function Game:keypressed(key)
     self:reparse()
   elseif key == "r" then
     Level:reset()
+    Level.room:updateLines()
+    Level.room:updateTiles()
   elseif key == "return" then
     Gamestate.switch(Editor)
   elseif key == "`" then -- debug
@@ -50,8 +53,9 @@ function Game:doTurn(dir)
   Movement.move(dir)
   self:reparse()
   self:doTransitions()
-  Level.room:updateTiles()
   self:checkWin()
+  Level.room:updateLines()
+  Level.room:updateTiles()
   self:playSounds()
 end
 

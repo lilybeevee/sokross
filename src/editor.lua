@@ -12,6 +12,7 @@ function Editor:enter()
 
   Level.static = true
   Level:reset()
+  Level.room:updateTiles()
 
   self.brush_canvas = love.graphics.newCanvas(TILE_SIZE*4, TILE_SIZE*4)
   self.brush = nil
@@ -111,6 +112,10 @@ function Editor:keypressed(key)
       local paradox_room = Level:getRoom(Level.room.paradox_room_key)
       Level:changeRoom(paradox_room)
     end
+  elseif key == "t" then
+    if self.brush.name == "room" or self.brush.name == "line" then
+      self.brush.locked = not self.brush.locked
+    end
   elseif key == "s" and love.keyboard.isDown("ctrl") then
     Level:save()
   elseif key == "d" and self.brush then
@@ -144,6 +149,7 @@ function Editor:keypressed(key)
     Gamestate.switch(Game)
   elseif key == "o" and love.keyboard.isDown("ctrl") then
     Level:load("test")
+    Level.room:updateTiles()
     self:buildRoomTree()
   end
 end
@@ -155,18 +161,21 @@ function Editor:mousepressed(x, y, btn)
       self.placing_entrance = false
       return
     else
-      local tiles = Level.room:getTilesAt(self.mx, self.my)
-      for _,tile in ipairs(tiles) do
-        if tile.name == "room" then
-          if not tile.room_key then
-            local room = Room(7, 7)
-            tile.room_key = Level:addRoom(room)
+      if not love.keyboard.isDown("shift") then
+        local tiles = Level.room:getTilesAt(self.mx, self.my)
+        for _,tile in ipairs(tiles) do
+          if tile.name == "room" then
+            if not tile.room_key then
+              local room = Room(7, 7)
+              tile.room_key = Level:addRoom(room)
+            end
+            table.insert(self.room_tree, tile)
+            Level:changeRoom(tile.room_key)
+            return
+          elseif tile.name == "tile" then
+            self:selectTileActivator(tile)
+            return
           end
-          table.insert(self.room_tree, tile)
-          Level:changeRoom(tile.room_key)
-          return
-        elseif tile.name == "tile" then
-          self:selectTileActivator(tile)
         end
       end
     end
@@ -197,13 +206,27 @@ function Editor:update(dt)
   end
 end
 
-function Editor:placeTile(x,y)
-  self:eraseTile(x,y)
+function Editor:placeTile(x,y,stack)
+  if not stack then
+    self:eraseTile(x,y)
+  end
   if Level.room:inBounds(x,y) then
-    local new_tile = self.brush:copy()
-    new_tile.x = x
-    new_tile.y = y
-    Level.room:addTile(new_tile)
+    local success = true
+    if stack then
+      for _,tile in ipairs(Level.room:getTilesAt(x,y)) do
+        if tile.name == self.brush.name and tile.word == self.brush.word then
+          success = false
+          break
+        end
+      end
+    end
+    if success then
+      local new_tile = self.brush:copy()
+      new_tile.x = x
+      new_tile.y = y
+      Level.room:addTile(new_tile)
+      Level.room:updateTiles()
+    end
   end
 end
 
@@ -212,6 +235,7 @@ function Editor:eraseTile(x,y)
     for _,tile in ipairs(Level.room:getTilesAt(x,y)) do
       Level.room:removeTile(tile)
     end
+    Level.room:updateTiles()
   end
 end
 

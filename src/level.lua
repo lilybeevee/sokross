@@ -8,6 +8,7 @@ function Level:new(name)
   self.rooms = {}
   self.has_room = {}
   self.start = {}
+  self.room_won = {}
 
   self.tile_key = 1
   self.room_key = 1

@@ -51,8 +51,7 @@ function Undo:doUndo(undo)
       end
     end
 
-    tile:moveTo(x, y, room)
-    tile.dir = dir or tile.dir
+    tile:moveTo(x, y, room, dir or tile.dir)
   end
 end
 

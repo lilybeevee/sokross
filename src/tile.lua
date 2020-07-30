@@ -33,6 +33,7 @@ function Tile:init(name, x, y, o)
   self.room_key = o.room_key
   self.room = o.room
   self.activator = o.activator
+  self.locked = o.locked or false
   
   if o.word then
     self.wordname = o.word
@@ -62,8 +63,8 @@ function Tile:init(name, x, y, o)
   self.walk_frame = false
   
   self.active = false -- for valid rules
-  self.active_sides = {false, false, false, false} -- for rule connections
-  self.activated = false -- for tiles
+  self.active_sides = {false, false, false, false} -- for side connections
+  self.activated = false -- for tiles and rooms
 end
 
 function Tile:update()
@@ -83,6 +84,11 @@ function Tile:update()
           Game.sound["unclick"] = true
         end
       end
+    end
+  elseif self.name == "line" then
+    self.active_sides = {false, false, false, false}
+    for _,conn in ipairs(self:getConnections("line")) do
+      self.active_sides[conn[2]] = true
     end
   end
 
@@ -112,10 +118,15 @@ function Tile:hasRule(effect)
   return self.parent:hasRule(self.name, effect)
 end
 
-function Tile:moveTo(x, y, room)
+function Tile:moveTo(x, y, room, dir)
+  if not dir then
+    dir = Dir.fromPos(x-tile.x, y-tile.y) or tile.dir
+  end
+  self.dir = dir
+
   if room and self.parent ~= room then
     if self:hasRule("play") then
-      room:enter()
+      room:enter(self, dir)
     end
 
     self.parent:removeTile(self)
@@ -194,7 +205,9 @@ end
 
 function Tile:getConnections(type)
   local inputs = {}
-  if self.word then
+  local word_check = self.word
+  local line_check = type == "line"
+  if word_check or line_check then
     for dir = 1, 4 do
       local othertype = "all"
       if type == "in" then
@@ -202,11 +215,11 @@ function Tile:getConnections(type)
       elseif type == "out" then
         othertype = "in"
       end
-      if self.sides[dir] ~= "none" and (type == "all" or self.sides[dir] == "all" or self.sides[dir] == type) then
+      if type == "line" or (self.sides[dir] ~= "none" and (type == "all" or self.sides[dir] == "all" or self.sides[dir] == type)) then
         local dx, dy = Dir.toPos(dir)
         local rdir = Dir.reverse(dir)
         for _,tile in ipairs(self.parent:getTilesAt(self.x+dx, self.y+dy)) do
-          if tile.word and tile.sides[rdir] ~= "none" and (type == "all" or tile.sides[rdir] == "all" or tile.sides[rdir] == othertype) then
+          if (type == "line" and (tile.name == "line" or tile.name == "room")) or (type ~= "line" and tile.word and tile.sides[rdir] ~= "none" and (type == "all" or tile.sides[rdir] == "all" or tile.sides[rdir] == othertype)) then
             table.insert(inputs, {tile, dir})
           end
         end
@@ -224,6 +237,8 @@ function Tile:getActivated()
         return true
       end
     end
+  elseif self.name == "room" then
+    return self.room_key and Level.room_won[self.room_key]
   end
   return false
 end
@@ -237,11 +252,11 @@ function Tile:draw(palette)
   end
 
   if self.name == "room" then
-    if self.room then
-      local ipalette = Assets.palettes[self.room.palette]
-      ipalette:setColor(0, 1)
-      love.graphics.rectangle("fill", -TILE_SIZE/2, -TILE_SIZE/2, TILE_SIZE, TILE_SIZE)
+    local ipalette = Assets.palettes[self.room and self.room.palette or (self.parent and self.parent.palette or "default")]
+    ipalette:setColor(0, 1)
+    love.graphics.rectangle("fill", -TILE_SIZE/2, -TILE_SIZE/2, TILE_SIZE, TILE_SIZE)
 
+    if self.room and (not self.locked or Gamestate.current() == Editor) then
       love.graphics.push()
       love.graphics.translate(-self.room.width, -self.room.height)
       ipalette:setColor(0, 4)
@@ -259,15 +274,39 @@ function Tile:draw(palette)
         end
       end
       love.graphics.pop()
+
+      if self.locked then
+        love.graphics.setColor(0, 0, 0, 0.33)
+        love.graphics.rectangle("fill", -TILE_SIZE/2, -TILE_SIZE/2, TILE_SIZE, TILE_SIZE)
+      end
     else
-      love.graphics.setColor(1, 1, 1)
-      local sprite = Assets.sprites["tiles/room"]
+      palette:setColor(0, 4)
+      local sprite
+      if not self.locked then
+        sprite = Assets.sprites["tiles/room"]
+      else
+        sprite = Assets.sprites["tiles/room_locked"]
+      end
       love.graphics.draw(sprite, -sprite:getWidth()/2, -sprite:getHeight()/2)
     end
 
     palette:setColor(0, 1)
     love.graphics.setLineWidth(2)
     love.graphics.rectangle("line", -TILE_SIZE/2, -TILE_SIZE/2, TILE_SIZE, TILE_SIZE)
+  elseif self.name == "line" then
+    palette:setColor(0, 2)
+    if self.active_sides[1] or self.active_sides[2] or self.active_sides[3] or self.active_sides[4] then
+      local sprite = Assets.sprites["tiles/line_connection"..(self.locked and "_locked" or "")]
+      for i = 1, 4 do
+        if self.active_sides[i] then
+          love.graphics.draw(sprite, -sprite:getWidth()/2, -sprite:getHeight()/2)
+        end
+        love.graphics.rotate(math.rad(90))
+      end
+    else
+      local sprite = Assets.sprites["tiles/line"..(self.locked and "_locked" or "")]
+      love.graphics.draw(sprite, -sprite:getWidth()/2, -sprite:getHeight()/2)
+    end
   elseif self.name == "rule" and self.word then
     local rule_base = Assets.sprites["tiles/rule"]
     local word_sprite = Assets.sprites["words/"..self.word.name]
@@ -342,7 +381,8 @@ function Tile:copy()
     word = self.word and self.word.name or nil,
     sides = self:getHasSides(),
     room_key = self.room_key,
-    activator = self.activator
+    activator = self.activator,
+    locked = self.locked,
   })
   if tile.room_key then
     tile.room = Level:getRoom(tile.room_key)
@@ -368,6 +408,7 @@ function Tile:save()
     data.room = self.room_key
   end
   data.activator = self.activator
+  data.locked = self.locked
 
   return data
 end
@@ -380,6 +421,7 @@ function Tile.load(data)
     sides = data.sides,
     room_key = data.room,
     activator = data.activator,
+    locked = data.locked,
   })
 end
 

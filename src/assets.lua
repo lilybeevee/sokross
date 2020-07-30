@@ -155,6 +155,12 @@ function Assets.addTiles()
       layer = 1,
     },
     {
+      name = "line",
+      sprites = {"line"},
+      colors = {{0, 2}},
+      layer = 1,
+    },
+    {
       name = "tile",
       sprites = {"tile"},
       colors = {{0, 2}},
@@ -239,6 +245,12 @@ function Assets.addWords()
       name = "room",
       type = "noun",
       color = 1,
+    },
+    {
+      name = "line",
+      type = "noun",
+      color = 6,
+      dark = true,
     },
     {
       name = "flat",

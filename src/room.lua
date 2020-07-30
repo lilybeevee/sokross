@@ -20,6 +20,9 @@ function Room:init(width, height, o)
   self.palette = o.palette or "default"
   self.exit = o.exit
   self.entry = o.entry
+
+  self.exit_as = o.exit_as
+  self.exit_dir = o.exit_dir or 2
   
   self.paradox = o.paradox or false
   self.paradox_room = o.paradox_room
@@ -60,8 +63,14 @@ function Room:parse()
   self.last_parsed = Game.turn
 end
 
-function Room:enter()
+function Room:enter(tile, dir)
   Level:changeRoom(self)
+  if tile.parent and tile.parent:getLayer() < self:getLayer() then
+    if tile then
+      self.exit_as = tile:save()
+    end
+    self.exit_dir = Dir.reverse(dir) or self.exit_dir
+  end
   if self.last_parsed == 0 or (self.exit and self:getParent().last_parsed > self.last_parsed) then
     self:parse()
   end
@@ -100,6 +109,41 @@ function Room:removeTile(tile)
   Utils.removeFromTable(self.tiles_by_pos[tile.x..","..tile.y], tile)
   Utils.removeFromTable(self.tiles_by_name[tile.name], tile)
   Utils.removeFromTable(self.tiles_by_layer[tile.layer], tile)
+end
+
+function Room:updateLines()
+  local already_checked = {}
+  local function unlockAround(x,y)
+    for i = 1, 4 do
+      local dx, dy = Dir.toPos(i)
+      if not already_checked[x+dx..","..y+dy] then
+        already_checked[x+dx..","..y+dy] = true
+
+        local has_room = false
+        local has_line = false
+        for _,tile in ipairs(self:getTilesAt(x+dx, y+dy)) do
+          if tile.name == "room" then
+            has_room = true
+            tile.locked = false
+          elseif tile.name == "line" then
+            has_line = true
+            tile.locked = false
+          end
+        end
+        if not has_room and has_line then
+          unlockAround(x+dx, y+dy)
+        end
+      end
+    end
+  end
+  for _,tile in ipairs(self.tiles) do
+    if tile.name == "room" then
+      if tile:getActivated() then
+        tile.locked = false
+        unlockAround(tile.x, tile.y)
+      end
+    end
+  end
 end
 
 function Room:updateTiles()
@@ -180,9 +224,20 @@ function Room:win()
     Level:changeRoom(self:getParent())
     Level.room:win()
   else
-    self.won = true
-    if self:getParent() then
+    Level.room_won[self.key] = true
+    if self.exit then
+      local dx, dy = Dir.toPos(self.exit_dir)
+      local exiter
+      if self.exit_as then
+        exiter = Tile.load(self.exit_as)
+        exiter.dir = self.exit_dir
+      else
+        exiter = Tile(Level.player, self.exit.x+dx, self.exit.y+dy, {dir = self.exit_dir})
+      end
+      self:getParent():addTile(exiter)
       Level:changeRoom(self:getParent())
+      self.exit.room = Level:getRoom(self.key)
+      self.exit.room.exit = self.exit
     else -- ideally this can't happen unless you're just playtesting from editor
       Gamestate.switch(Editor)
     end
