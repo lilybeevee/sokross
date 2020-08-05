@@ -1,14 +1,34 @@
 local Level = {}
 
 Level.static = false
+Level.exists = false
 
 function Level:new(name)
+  self:clear()
+
+  self.new = true
   self.name = name
+
+  self:generateDefaults()
+
+  self:traverse(self.start)
+  self:spawnPlayer()
+end
+
+function Level:clear()
+  self.exists = true
+
+  self.new = false
+  self.name = self.name or ""
   self.player = "flof"
   self.rooms = {}
   self.has_room = {}
-  self.start = {}
   self.room_won = {}
+
+  self.start = {}
+  self.start_key = nil
+  self.root = nil
+  self.root_key = nil
 
   self.tile_key = 1
   self.room_key = 1
@@ -19,27 +39,13 @@ function Level:new(name)
   self.tiles_by_key = {}
   self.rooms_by_id = {}
 
-  self:generateDefaults()
-
-  self:traverse(self.start)
-  self:spawnPlayer()
+  self.paradox_keys = {}
+  self.void_room = nil
+  self.heaven_key = nil
 end
 
 function Level:reset()
-  if not self.static then
-    local static_root = self.rooms[self.root_key]
-    self.rooms = {}
-    self.rooms[self.root_key] = static_root
-    self.tiles_by_key = {}
-  end
-
-  self.tile_id = 1
-  self.room_id = 1
-  self.tiles_by_id = {}
-  self.rooms_by_id = {}
-
-  self:traverse(self.start)
-  self:spawnPlayer()
+  self:load(self.name)
 end
 
 function Level:spawnPlayer()
@@ -123,6 +129,12 @@ function Level:save()
   local dir = "levels/"..self.name.."/"
   
   for key,room in pairs(self.rooms) do
+    local tree = key:split("/")
+    table.remove(tree, #tree)
+    local subdir = table.concat(tree)
+    if subdir ~= "" then
+      love.filesystem.createDirectory(dir..subdir)
+    end
     local savestr = Utils.saveTable(room:save())
     love.filesystem.write(dir..key..".room", savestr)
   end
@@ -131,11 +143,13 @@ function Level:save()
     name = self.name,
     player = self.player,
     start = self.start,
+    start_key = self.start_key,
     root = self.root.key,
     tile_key = self.tile_key,
     room_key = self.room_key
   }
   love.filesystem.write(dir.."level.json", JSON.encode(info))
+  self.new = false
 end
 
 function Level:load(name)
@@ -143,32 +157,105 @@ function Level:load(name)
     local dir = "levels/"..name.."/"
 
     local info = JSON.decode(love.filesystem.read(dir.."level.json"))
+    
+    self:clear()
     self.name = info.name or name
     self.player = info.player or "flof"
     self.start = info.start or {}
     self.room_key = info.room_key or 1
     self.tile_key = info.tile_key or 1
 
-    self.rooms = {}
-    self.has_room = {}
-
-    self.tile_id = 1
-    self.room_id = 1
-    self.tiles_by_key = {}
-    self.tiles_by_id = {}
-    self.rooms_by_id = {}
-
-    for _,file in ipairs(love.filesystem.getDirectoryItems(dir)) do
-      if file:sub(-5) == ".room" then
-        self.has_room[file:sub(1, -6)] = true
+    local function findRooms(d)
+      if d then
+        dir = dir .. d .. "/"
+      end
+      local files = love.filesystem.getDirectoryItems(dir)
+      for _,file in ipairs(files) do
+        if file:sub(-5) == ".room" then
+          self.has_room[(d and (d.."/") or "")..file:sub(1, -6)] = true
+        elseif love.filesystem.getInfo(dir .. file).type == "directory" then
+          findRooms((d and (d.."/") or "")..file)
+        end
       end
     end
+    findRooms()
 
     self.root = self:getRoom(info.root)
     self.root_key = info.root
 
     self:traverse(self.start)
+    if not self.start_key then
+      self.start_key = self.room.key
+    end
     self:spawnPlayer()
+  end
+end
+
+function Level:merge(basedir, name)
+  if love.filesystem.getInfo(basedir.."/"..name) then
+    local dir = basedir.."/"..name.."/"
+    local newdir = "levels/"..self.name.."/"..name.."/"
+
+    Utils.removeDirectory(newdir)
+    love.filesystem.createDirectory(newdir)
+
+    for k,v in pairs(self.rooms) do
+      if k:startsWith(name.."/") then
+        self.rooms[k] = nil
+      end
+    end
+    for k,v in pairs(self.has_room) do
+      if k:startsWith(name.."/") then
+        self.has_room[k] = nil
+      end
+    end
+
+    local function fixRoom(roomkey)
+      local newkey = name.."/"..roomkey
+
+      local loadstr = love.filesystem.read(dir..roomkey..".room")
+      local roomdata = Utils.loadTable(loadstr)
+      
+      roomdata.key = newkey
+      roomdata.paradox_key = roomdata.paradox_key and (name.."/"..roomdata.paradox_key) or nil
+      roomdata.non_paradox_key = roomdata.non_paradox_key and (name.."/"..roomdata.non_paradox_key) or nil
+
+      if roomdata.tiles then
+        for _,tiledata in ipairs(roomdata.tiles) do
+          tiledata.key = tiledata.key and (name.."/"..tiledata.key) or nil
+          tiledata.room = tiledata.room and (name.."/"..tiledata.room) or nil
+        end
+      end
+
+      local tree = roomkey:split("/")
+      table.remove(tree, #tree)
+      local subdir = table.concat(tree)
+      if subdir ~= "" then
+        love.filesystem.createDirectory(newdir..subdir)
+      end
+      local savestr = Utils.saveTable(roomdata)
+      love.filesystem.write(newdir..roomkey..".room", savestr)
+
+      self.has_room[roomdata.key] = true
+    end
+
+    local function fixRooms(d)
+      if d then
+        dir = dir .. d .. "/"
+      end
+      local files = love.filesystem.getDirectoryItems(dir)
+      for _,file in ipairs(files) do
+        if file:sub(-5) == ".room" then
+          fixRoom((d and (d.."/") or "")..file:sub(1, -6))
+        elseif love.filesystem.getInfo(dir .. file).type == "directory" then
+          fixRooms((d and (d.."/") or "")..file)
+        end
+      end
+    end
+    fixRooms()
+
+    local info = JSON.decode(love.filesystem.read(dir.."level.json"))
+    return name.."/"..(info.start_key or info.root_key)
   end
 end
 
@@ -193,19 +280,6 @@ function Level:generateDefaults()
       x = x + 1
     end
   end
-  
-  self.paradox_room = Room(7, 7, {paradox = true, palette = "paradox"})
-  self:addRoom(self.paradox_room)
-  self.paradox_room_key = self.paradox_room.key
-  
-  self.void_room = Room(17, 13, {void = true})
-  self:addRoom(self.void_room)
-  self.void_room_key = self.void_room.key
-  
-  self.heaven_room = Room(9, 5, {heaven = true})
-  self:addRoom(self.heaven_room)
-  self.heaven_room:addTile(Tile("tile", 6, 2, {activator = "flof"}))
-  self.heaven_room_key = self.heaven_room.key
 
   local room2 = Room(7, 7)
   self:addRoom(room2)
@@ -214,8 +288,36 @@ function Level:generateDefaults()
   room1:addTile(room2_portal)
 
   self.start = {room2_portal.key}
+  self.start_key = room2.key
   self.root = room1
   self.root_key = room1.key
+end
+
+function Level:getParadox(ref)
+  local idstr = ref.width..","..ref.height
+  if not self.paradox_keys[idstr] then
+    local room = Room(ref.width, ref.height, {paradox = true, palette = "paradox"})
+    room:addTile(Tile("tile", math.floor(room.width/2), math.floor(room.height/2), {activator = self.player}))
+    self.paradox_keys[idstr] = self:addRoom(room)
+  end
+  return self:getRoom(self.paradox_keys[idstr])
+end
+
+function Level:getVoid()
+  if not self.void_room then
+    self.void_room = Room(0, 0, {void = true})
+    self:addRoom(self.void_room)
+  end
+  return self.void_room
+end
+
+function Level:getHeaven()
+  if not self.heaven_key then
+    local room = Room(9, 5, {heaven = true})
+    room:addTile(Tile("tile", 6, 2, {activator = self.player}))
+    self.heaven_key = self:addRoom(room)
+  end
+  return self:getRoom(self.heaven_key)
 end
 
 return Level

@@ -115,7 +115,7 @@ function Movement.canMove(tile, dir, enter, reason, already_entered)
   local current_mover = {tile = tile, x = x, y = y, dir = dir, room = room, reason = reason}
   local movers = {}
 
-  if not room:inBounds(x, y) and room:hasRule("wall", "stop") then
+  if not room.void and not room:inBounds(x, y) and room:hasRule("wall", "stop") then
     return false, {}
   end
 

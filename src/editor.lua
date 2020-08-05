@@ -1,17 +1,16 @@
 local Editor = {}
 
-function Editor:init()
-  Level.static = true
-  Level:new("test")
-end
-
 function Editor:enter()
   print("Sokoma editor")
 
   self.font = love.graphics.newFont(46)
 
   Level.static = true
-  Level:reset()
+  if not Level.exists then
+    Level:new("new level")
+  else
+    Level:reset()
+  end
   Level.room:updateTiles()
 
   self.brush_canvas = love.graphics.newCanvas(TILE_SIZE*4, TILE_SIZE*4)
@@ -83,33 +82,34 @@ function Editor:keypressed(key)
         for _,tile in ipairs(self.room_tree) do
           table.insert(Level.start, tile.key)
         end
+        Level.start_key = Level.room.key
       end
     else
       self.placing_entrance = not self.placing_entrance
     end
   elseif key == "p" and love.keyboard.isDown("ctrl") then
-    if not Level.room.paradox_room_key then
+    if not Level.room.paradox_key then
       if Level.room.paradox then
         print("leaving paradox")
-        local non_paradox_room = Level:getRoom(Level.room.non_paradox_room_key)
+        local non_paradox_room = Level:getRoom(Level.room.non_paradox_key)
         Level:changeRoom(non_paradox_room)
       else
         print("creating paradox")
-        local new_paradox_room = Room(7, 7, {
+        local new_paradox_room = Room(Level.room.width, Level.room.height, {
           paradox = true,
           palette = "paradox",
           non_paradox_room = Level.room,
-          non_paradox_room_key = Level.room.key,
+          non_paradox_key = Level.room.key,
           exit = Level.room.exit}
         )
         Level:addRoom(new_paradox_room)
         Level.room.paradox_room = new_paradox_room
-        Level.room.paradox_room_key = new_paradox_room.key
+        Level.room.paradox_key = new_paradox_room.key
         Level:changeRoom(new_paradox_room)
       end
     else
       print("going to paradox")
-      local paradox_room = Level:getRoom(Level.room.paradox_room_key)
+      local paradox_room = Level:getRoom(Level.room.paradox_key)
       Level:changeRoom(paradox_room)
     end
   elseif key == "t" then
@@ -117,7 +117,26 @@ function Editor:keypressed(key)
       self.brush.locked = not self.brush.locked
     end
   elseif key == "s" and love.keyboard.isDown("ctrl") then
-    Level:save()
+    if Level.new or love.keyboard.isDown("shift") then
+      Gamestate.push(TextInput, "File to save level as:", not Level.new and Level.name or "", function(text)
+        Level.name = text
+        Level:save()
+      end)
+    else
+      Level:save()
+    end
+  elseif key == "m" and love.keyboard.isDown("ctrl") then
+    Gamestate.push(TextInput, "Level name to merge:", "", function(text)
+      local merged_key = Level:merge("levels", text)
+      if merged_key then
+        self.brush = Tile("room", 0, 0, {room = Level:getRoom(merged_key), room_key = merged_key})
+      end
+
+      Level:save()
+      local current_room = Level.room.key
+      Level:reset()
+      Level:changeRoom(current_room)
+    end)
   elseif key == "d" and self.brush then
     self.brush.dir = 1
   elseif key == "s" and self.brush then
@@ -148,9 +167,11 @@ function Editor:keypressed(key)
     Level:save()
     Gamestate.switch(Game)
   elseif key == "o" and love.keyboard.isDown("ctrl") then
-    Level:load("test")
-    Level.room:updateTiles()
-    self:buildRoomTree()
+    Gamestate.push(TextInput, "Enter file name to load:", "", function(text)
+      Level:load(text)
+      Level.room:updateTiles()
+      self:buildRoomTree()
+    end)
   end
 end
 

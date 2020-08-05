@@ -19,6 +19,7 @@ Room = require "src.room"
 Rules = require "src.rules"
 Movement = require "src.movement"
 Undo = require "src.undo"
+TextInput = require "src.textinput"
 
 function love.load()
   print("Sokoma? What's that")

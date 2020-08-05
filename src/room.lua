@@ -26,9 +26,9 @@ function Room:init(width, height, o)
   
   self.paradox = o.paradox or false
   self.paradox_room = o.paradox_room
-  self.paradox_room_key = o.paradox_room_key
+  self.paradox_key = o.paradox_key
   self.non_paradox_room = o.non_paradox_room
-  self.non_paradox_room_key = o.non_paradox_room_key
+  self.non_paradox_key = o.non_paradox_key
   
   self.void = o.void
   self.heaven = o.heaven
@@ -222,38 +222,37 @@ function Room:getParadoxEntry(tile)
     return math.floor(new_x/TILE_SIZE), math.floor(new_y/TILE_SIZE)
   end
   if self.paradox_room then
-    print("existing paradox")
     local x, y = getCoordsTo(self.paradox_room)
     return x, y, self.paradox_room
+  elseif self.paradox_key then
+    local room = Level:getRoom(self.paradox_key)
+    self.paradox_room = room
+    local x, y = getCoordsTo(room)
+    return x, y, room
   else
     if self.paradox then
-      print("void")
-      local new_void = Level:getRoom(Level.void_room_key)
-      self.paradox_room = new_void
-      new_void.exit = self.exit
-      local x, y = getCoordsTo(new_void)
-      return x, y, new_void
+      local room = Level:getVoid()
+      room.exit = self.exit
+      local x, y = getCoordsTo(room)
+      return x, y, room
     elseif self.void then
       if tile:hasRule("play") then
-        print("heaven")
-        local new_heaven = Level:getRoom(Level.heaven_room_key)
-        new_heaven.exit = self.exit
-        return 2, 2, new_heaven
-      else --send it to a void, it doesn't really matter since the player can't see it anyways
-        print("void")
-        local new_void = Level:getRoom(Level.void_room_key)
-        self.paradox_room = new_void
-        new_void.exit = self.exit
-        local x, y = getCoordsTo(new_void)
-        return x, y, new_void
+        local room = Level:getHeaven()
+        room.exit = self.exit
+        return 2, 2, room
+      else
+        local room = Level:getVoid()
+        room.exit = self.exit
+        local x, y = getCoordsTo(room)
+        return x, y, room
       end
     else
-      print("paradox")
-      local new_paradox = Level:getRoom(self.paradox_room_key or Level.paradox_room_key)
-      self.paradox_room = new_paradox
-      new_paradox.exit = self.exit
-      local x, y = getCoordsTo(new_paradox)
-      return x, y, new_paradox
+      local room = Level:getParadox(self)
+      self.paradox_room = room
+      self.paradox_key = room.key
+      room.exit = self.exit
+      local x, y = getCoordsTo(room)
+      return x, y, room
     end
   end
 end
@@ -304,8 +303,8 @@ function Room:save()
     data.palette = self.palette
   end
   if self.paradox then data.paradox = self.paradox end
-  data.paradox_room_key = self.paradox_room_key
-  data.non_paradox_room_key = self.non_paradox_room_key
+  data.paradox_key = self.paradox_key
+  data.non_paradox_key = self.non_paradox_key
   if self.void then data.void = self.void end
   if self.heaven then data.heaven = self.heaven end
   data.entry = self.entry
@@ -319,8 +318,8 @@ function Room.load(data)
     key = data.key,
     palette = data.palette,
     paradox = data.paradox,
-    paradox_room_key = data.paradox_room_key,
-    non_paradox_room_key = data.non_paradox_room_key,
+    paradox_key = data.paradox_key or data.paradox_room_key,
+    non_paradox_key = data.non_paradox_key or data.non_paradox_room_key,
     void = data.void,
     heaven = data.heaven,
     entry = data.entry,

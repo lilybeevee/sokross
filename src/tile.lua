@@ -16,7 +16,7 @@ function Tile:init(name, x, y, o)
   if o.key then
     self.key = o.key
   else
-    self.key = Level.tile_key + 1
+    self.key = tostring(Level.tile_key + 1)
     Level.tile_key = Level.tile_key + 1
   end
   Level.tiles_by_key[self.key] = Level.tiles_by_key[self.key] or {}

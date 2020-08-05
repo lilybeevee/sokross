@@ -14,6 +14,25 @@ function love.keyboard.isDown(key)
   end
 end
 
+function string:split(sep)
+  if sep == nil then
+    sep = "%s"
+  end
+  local t={}
+  for str in string.gmatch(self, "([^"..sep.."]+)") do
+    table.insert(t, str)
+  end
+  return t
+end
+
+function string:startsWith(start)
+  return self:sub(1, start:len()) == start
+end
+
+function string:endsWith(ending)
+  return ending == "" or self:sub(-#ending) == ending
+end
+
 function dump(o)
   if type(o) == 'table' then
     local s = '{'
@@ -175,6 +194,19 @@ function Utils.loadTable(data, pos)
   end
 
   return t, pos
+end
+
+function Utils.removeDirectory(dir)
+  if love.filesystem.getInfo(dir, "directory") then
+    for _,file in ipairs(love.filesystem.getDirectoryItems(dir)) do
+      local info = love.filesystem.getInfo(dir.."/"..file)
+      if info.type == "file" then
+        love.filesystem.remove(dir.."/"..file)
+      else
+        Utils.removeDirectory(dir.."/"..file)
+      end
+    end
+  end
 end
 
 return Utils
