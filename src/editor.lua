@@ -214,7 +214,7 @@ function Editor:mousepressed(x, y, btn)
         end
       end
     end
-  elseif btn == 3 then
+  elseif btn == 3 or (btn == 2 and love.keyboard.isDown("shift")) then
     local tiles = Level.room:getTilesAt(self.mx, self.my)
     if #tiles > 0 then
       self.brush = tiles[1]:copy()
@@ -236,7 +236,7 @@ function Editor:update(dt)
 
   if painting and love.mouse.isDown(1) and self.brush then
     self:placeTile(self.mx, self.my)
-  elseif painting and love.mouse.isDown(2) then
+  elseif painting and love.mouse.isDown(2) and not love.keyboard.isDown("shift") then
     self:eraseTile(self.mx, self.my)
   end
 end
