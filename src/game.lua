@@ -18,21 +18,24 @@ function Game:enter()
   Level.room:updateTiles()
   self.sound = {}
 
+  self.move_key_buffer = {}
+  self.move_timer = 0
+  self.undoing = false
+  self.undo_timer = 0
+  self.undo_timer_mult = 1
+
   --print(dump(Level.room.rules.rules))
 end
 
 function Game:keypressed(key)
-  if key == "d" then
-    self:doTurn(1)
-  elseif key == "s" then
-    self:doTurn(2)
-  elseif key == "a" then
-    self:doTurn(3)
-  elseif key == "w" then
-    self:doTurn(4)
-  elseif key == "z" then
-    Undo:back()
-    self:reparse()
+  for mkey,_ in pairs(MOVE_KEYS) do
+    if key == mkey then
+      table.insert(self.move_key_buffer, key)
+      self.move_timer = 0
+    end
+  end
+  if key == "z" then
+    self.undoing = true
   elseif key == "r" then
     Level:reset()
     Level.room:updateLines()
@@ -43,6 +46,42 @@ function Game:keypressed(key)
     self:doTurn()
     for _,tile in ipairs(Level.room:getTilesByName("flof")) do
       tile:goToParadox()
+    end
+  end
+end
+
+function Game:keyreleased(key)
+  for mkey,_ in pairs(MOVE_KEYS) do
+    if key == mkey then
+      Utils.removeFromTable(self.move_key_buffer, key)
+    end
+  end
+  if key == "z" then
+    self.undoing = false
+  end
+end
+
+function Game:update(dt)
+  if self.undoing then
+    self.undo_timer = math.max(0, self.undo_timer - dt)
+    if self.undo_timer == 0 then
+      self.undo_timer = KEY_REPEAT / self.undo_timer_mult
+      self.undo_timer_mult = math.min(3, self.undo_timer_mult + 0.1)
+      Undo:back()
+      self:reparse()
+    end
+  else
+    self.undo_timer = 0
+    self.undo_timer_mult = 1
+    if #self.move_key_buffer > 0 then
+      self.move_timer = math.max(0, self.move_timer - dt)
+      if self.move_timer == 0 then 
+        self.move_timer = KEY_REPEAT
+        local dir = MOVE_KEYS[self.move_key_buffer[#self.move_key_buffer]]
+        self:doTurn(dir)
+      end
+    else
+      self.move_timer = 0
     end
   end
 end
@@ -108,6 +147,7 @@ end
 function Game:doTransitions()
   local transitions_done = false
   local moved_tile = {}
+  local moved_persist = {}
 
   while not transitions_done do
     local rooms = self.update_room
@@ -122,9 +162,13 @@ function Game:doTransitions()
             for _,other in ipairs(room:getTilesAt(tile.x, tile.y)) do
               if other ~= tile and not other:hasRule("flat") then
                 moved_tile[tile] = moved_tile[tile] or {}
-                if not moved_tile[tile][other] then
+                moved_persist[tile] = moved_persist[tile] or {}
+                if not moved_tile[tile][other] and (not other.persist or not moved_persist[tile][other.key]) then
                   other:moveTo(tile.parent.exit.x, tile.parent.exit.y, tile.parent:getParent())
                   moved_tile[tile][other] = true
+                  if other.persist then
+                    moved_persist[tile][other.key] = true
+                  end
                 else
                   other:goToParadox()
                 end
@@ -140,7 +184,8 @@ function Game:doTransitions()
           for _,other in ipairs(room:getTilesAt(tile.x, tile.y)) do
             if other ~= tile and not other:hasRule("flat") then
               moved_tile[tile] = moved_tile[tile] or {}
-              if not moved_tile[tile][other] then
+              moved_persist[tile] = moved_persist[tile] or {}
+              if not moved_tile[tile][other] and (not other.persist or not moved_persist[tile][other.key]) then
                 if not tile.room then
                   tile.room = Level:getRoom(tile.room_key)
                   tile.room.exit = tile
@@ -150,6 +195,9 @@ function Game:doTransitions()
                 local ex, ey = tile.room:getEntry()
                 other:moveTo(ex, ey, tile.room)
                 moved_tile[tile][other] = true
+                if other.persist then
+                  moved_persist[tile][other.key] = true
+                end
               else
                 other:goToParadox()
               end

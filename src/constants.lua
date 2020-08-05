@@ -1,4 +1,5 @@
 TILE_SIZE = 24
+KEY_REPEAT = 0.21
 
 DIR_POS = {
   [1] = { 1,  0},
@@ -11,6 +12,17 @@ DIR_REVERSE = {
   [2] = 4,
   [3] = 1,
   [4] = 2
+}
+
+MOVE_KEYS = {
+  d     = 1,
+  s     = 2,
+  a     = 3,
+  w     = 4,
+  right = 1,
+  down  = 2,
+  left  = 3,
+  up    = 4,
 }
 
 DEFAULT_RULES = {

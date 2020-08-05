@@ -72,6 +72,17 @@ function Editor:buildRoomTree()
   end
 end
 
+function Editor:merge(name)
+  local merged_key = Level:merge(name)
+  if merged_key then
+    self.brush = Tile("room", 0, 0, {room = Level:getRoom(merged_key), room_key = merged_key})
+  end
+  Level:save()
+  local current_room = Level.room.key
+  Level:reset()
+  Level:changeRoom(current_room)
+end
+
 function Editor:keypressed(key)
   if key == "tab" then
     self:openTileSelector()
@@ -127,15 +138,7 @@ function Editor:keypressed(key)
     end
   elseif key == "m" and love.keyboard.isDown("ctrl") then
     Gamestate.push(TextInput, "Level name to merge:", "", function(text)
-      local merged_key = Level:merge("levels", text)
-      if merged_key then
-        self.brush = Tile("room", 0, 0, {room = Level:getRoom(merged_key), room_key = merged_key})
-      end
-
-      Level:save()
-      local current_room = Level.room.key
-      Level:reset()
-      Level:changeRoom(current_room)
+      self:merge(text)
     end)
   elseif key == "c" then
     -- feature: good coding
@@ -175,15 +178,43 @@ function Editor:keypressed(key)
       Level:changeRoom(table.remove(self.room_tree, #self.room_tree).parent)
     end
   elseif key == "return" then
-    Level:save()
+    if not Level.mounted then
+      Level:save()
+    end
     Gamestate.switch(Game)
   elseif key == "o" and love.keyboard.isDown("ctrl") then
     Gamestate.push(TextInput, "Enter file name to load:", "", function(text)
+      print("Loading "..text)
       Level:load(text)
+      print("nya 1")
       Level.room:updateTiles()
+      print("nya 2")
       self:buildRoomTree()
+      print("nya 3")
     end)
   end
+end
+
+function Editor:filedropped(file)
+  local path = file:getFilename()
+  local pathtree = path:split("/\\")
+  local filename = pathtree[#pathtree]
+
+  if filename:sub(-4) == ".zip" then
+    local lvlname = filename:sub(1, -5)
+    love.filesystem.mount(path, "levels/"..lvlname)
+    self:merge(lvlname)
+    love.filesystem.unmount(path)
+  end
+end
+
+function Editor:directorydropped(path)
+  local pathtree = path:split("/\\")
+  local lvlname = pathtree[#pathtree]
+
+  love.filesystem.mount(path, "levels/"..lvlname)
+  self:merge(lvlname)
+  love.filesystem.unmount(path)
 end
 
 function Editor:mousepressed(x, y, btn)

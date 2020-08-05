@@ -4,6 +4,11 @@ Level.static = false
 Level.exists = false
 
 function Level:new(name)
+  if self.mounted then
+    love.filesystem.unmount(self.mounted)
+    self.mounted = nil
+  end
+
   self:clear()
 
   self.new = true
@@ -158,9 +163,24 @@ function Level:save()
   }
   love.filesystem.write(dir.."level.json", JSON.encode(info))
   self.new = false
+
+  if self.mounted then
+    love.filesystem.unmount(self.mounted)
+    self.mounted = nil
+  end
 end
 
 function Level:load(name)
+  if self.mounted then
+    love.filesystem.unmount(self.mounted)
+    self.mounted = nil
+  end
+
+  if not love.filesystem.getInfo("levels/"..name) and love.filesystem.getInfo("levels/"..name..".zip") then
+    self.mounted = "levels/"..name..".zip"
+    love.filesystem.mount("levels/"..name..".zip", "levels/"..name)
+  end
+
   if love.filesystem.getInfo("levels/"..name) then
     local dir = "levels/"..name.."/"
 
@@ -201,9 +221,9 @@ function Level:load(name)
   end
 end
 
-function Level:merge(basedir, name)
-  if love.filesystem.getInfo(basedir.."/"..name) then
-    local dir = basedir.."/"..name.."/"
+function Level:merge(name)
+  if love.filesystem.getInfo("levels/"..name) then
+    local dir = "levels/"..name.."/"
     local newdir = "levels/"..self.name.."/"..name.."/"
 
     Utils.removeDirectory(newdir)

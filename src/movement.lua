@@ -35,50 +35,52 @@ function Movement.move(dir)
     end
 
     for _,mover in ipairs(movers) do
-      if mover.tile.word then
-        Game.parse_room[mover.room] = true
-        if mover.room ~= mover.tile.parent then
-          Game.parse_room[mover.tile.parent] = true
+      if mover.tile.parent then
+        if mover.tile.word then
+          Game.parse_room[mover.room] = true
+          if mover.room ~= mover.tile.parent then
+            Game.parse_room[mover.tile.parent] = true
+          end
         end
-      end
 
-      if mover.reason == "enter" then
-        Game.sound["enter"] = true
-      elseif mover.reason == "exit" then
-        Game.sound["exit"] = true
-      elseif mover.reason == "push" then
-        Game.sound["push"] = true
-      end
+        if mover.reason == "enter" then
+          Game.sound["enter"] = true
+        elseif mover.reason == "exit" then
+          Game.sound["exit"] = true
+        elseif mover.reason == "push" then
+          Game.sound["push"] = true
+        end
 
-      --[[local undo_dir = mover.tile.dir ~= mover.dir and mover.tile.dir or nil
-      local undo_room = mover.room.id ~= mover.tile.parent.id and mover.tile.parent.id or nil
-      Undo:add("move", mover.tile.id, mover.tile.x, mover.tile.y, undo_dir, undo_room)]]
+        --[[local undo_dir = mover.tile.dir ~= mover.dir and mover.tile.dir or nil
+        local undo_room = mover.room.id ~= mover.tile.parent.id and mover.tile.parent.id or nil
+        Undo:add("move", mover.tile.id, mover.tile.x, mover.tile.y, undo_dir, undo_room)]]
 
-      mover.tile:moveTo(mover.x, mover.y, mover.room, mover.dir)
+        mover.tile:moveTo(mover.x, mover.y, mover.room, mover.dir)
 
-      has_moved[mover.tile] = true
-      
-      local has_belt = false
-      for _,other in ipairs(mover.room:getTilesAt(mover.x, mover.y)) do
-        if other:hasRule("move") then
-          has_belt = true
-          if not mover.tile.belt_start then
-            mover.tile.belt_start = {other.x, other.y}
-            move_done = false
-            table.insert(still_moving, {tile = mover.tile, dir = other.dir})
-          else
-            if other.x == mover.tile.belt_start[1] and other.y == mover.tile.belt_start[2] then
-              mover.tile:goToParadox()
-              mover.tile.belt_start = nil
-            else
+        has_moved[mover.tile] = true
+        
+        local has_belt = false
+        for _,other in ipairs(mover.room:getTilesAt(mover.x, mover.y)) do
+          if other:hasRule("move") then
+            has_belt = true
+            if not mover.tile.belt_start then
+              mover.tile.belt_start = {other.x, other.y}
               move_done = false
               table.insert(still_moving, {tile = mover.tile, dir = other.dir})
+            else
+              if other.x == mover.tile.belt_start[1] and other.y == mover.tile.belt_start[2] then
+                mover.tile:goToParadox()
+                mover.tile.belt_start = nil
+              else
+                move_done = false
+                table.insert(still_moving, {tile = mover.tile, dir = other.dir})
+              end
             end
           end
         end
-      end
-      if not has_belt then
-        mover.tile.belt_start = nil
+        if not has_belt then
+          mover.tile.belt_start = nil
+        end
       end
     end
 
