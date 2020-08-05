@@ -149,6 +149,13 @@ function Assets.addTiles()
       property = "move",
     },
     {
+      name = "water",
+      sprites = {"water_shade", "water"},
+      colors = {{7, 3}, {7, 4}},
+      layer = 1,
+      property = "sink",
+    },
+    {
       name = "room",
       sprites = {"rect"},
       colors = {{4, 2}},
@@ -229,6 +236,17 @@ function Assets.addWords()
       name = "move",
       type = "prop",
       color = 4,
+    },
+    {
+      name = "water",
+      type = "noun",
+      color = 7,
+    },
+    {
+      name = "sink",
+      type = "prop",
+      color = 7,
+      dark = true,
     },
     {
       name = "rule",

@@ -17,6 +17,7 @@ function Movement.move(dir)
   end
 
   local move_done = false
+  local to_destroy = {}
   while #moves > 0 and not move_done do
     move_done = true
 
@@ -76,6 +77,10 @@ function Movement.move(dir)
                 table.insert(still_moving, {tile = mover.tile, dir = other.dir})
               end
             end
+          elseif other:hasRule("sink") then
+            Game.sound["sink"] = true
+            table.insert(to_destroy, mover.tile)
+            table.insert(to_destroy, other)
           end
         end
         if not has_belt then
@@ -91,6 +96,11 @@ function Movement.move(dir)
     if tile.tile.walk then
       tile.walk_frame = not tile.walk_frame
     end
+  end
+  
+  for _,tile in ipairs(to_destroy) do
+    Undo:add("remove", tile:save(true), tile.parent.id)
+    tile.parent:removeTile(tile)
   end
 end
 

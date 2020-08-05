@@ -117,7 +117,9 @@ function Game:playSounds()
       Assets.playSound("push")
     end
   end
-  if self.sound["click"] then
+  if self.sound["sink"] then
+    Assets.playSound("sink", 0.5)
+  elseif self.sound["click"] then
     Assets.playSound("click", 0.75)
   elseif self.sound["unclick"] then
     Assets.playSound("unclick", 0.75)

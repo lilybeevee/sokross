@@ -32,6 +32,8 @@ DEFAULT_RULES = {
   {"ladder", "exit"},
   {"belt", "move"},
   {"belt", "flat"},
+  {"water", "sink"},
+  {"water", "flat"},
   {"room", "push"},
   {"rule", "push"},
   {"tile", "flat"},
