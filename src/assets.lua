@@ -143,7 +143,7 @@ function Assets.addTiles()
     {
       name = "belt",
       sprites = {"belt"},
-      colors = {{0, 2}},
+      colors = {{8, 3}},
       layer = 2,
       rotate = true,
       property = "move",
@@ -157,13 +157,13 @@ function Assets.addTiles()
     {
       name = "line",
       sprites = {"line"},
-      colors = {{0, 2}},
+      colors = {{8, 3}},
       layer = 1,
     },
     {
       name = "tile",
       sprites = {"tile"},
-      colors = {{0, 2}},
+      colors = {{8, 3}},
       layer = 1,
     },
   }

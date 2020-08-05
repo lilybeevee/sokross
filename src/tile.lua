@@ -249,7 +249,7 @@ function Tile:draw(palette)
       love.graphics.draw(sprite, -sprite:getWidth()/2, -sprite:getHeight()/2)
     end
 
-    palette:setColor(8, 0)
+    ipalette:setColor(8, 0)
     love.graphics.setLineWidth(2)
     love.graphics.rectangle("line", -TILE_SIZE/2, -TILE_SIZE/2, TILE_SIZE, TILE_SIZE)
   elseif self.name == "line" then

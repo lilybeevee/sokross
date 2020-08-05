@@ -137,6 +137,15 @@ function Editor:keypressed(key)
       Level:reset()
       Level:changeRoom(current_room)
     end)
+  elseif key == "c" then
+    -- feature: good coding
+    if Level.room.palette == "default" then
+      Level.room.palette = "blue"
+    elseif Level.room.palette == "blue" then
+      Level.room.palette = "pink"
+    elseif Level.room.palette == "pink" then
+      Level.room.palette = "default"
+    end
   elseif key == "d" and self.brush then
     self.brush.dir = 1
   elseif key == "s" and self.brush then
