@@ -50,9 +50,9 @@ function Movement.move(dir)
         Game.sound["push"] = true
       end
 
-      local undo_dir = mover.tile.dir ~= mover.dir and mover.tile.dir or nil
+      --[[local undo_dir = mover.tile.dir ~= mover.dir and mover.tile.dir or nil
       local undo_room = mover.room.id ~= mover.tile.parent.id and mover.tile.parent.id or nil
-      Undo:add("move", mover.tile.id, mover.tile.x, mover.tile.y, undo_dir, undo_room)
+      Undo:add("move", mover.tile.id, mover.tile.x, mover.tile.y, undo_dir, undo_room)]]
 
       mover.tile:moveTo(mover.x, mover.y, mover.room, mover.dir)
 
@@ -145,7 +145,10 @@ function Movement.canMove(tile, dir, enter, reason, already_entered)
 
     if can_enter and not (success and pushable) then
       local new_movers
-      if already_entered[other] then
+      if tile.room and tile.persist and tile.parent:getParent() and tile.parent.exit.key == tile.key then
+        -- really hacky solution to just bypass the infloop paradox if we're pushing a persistent room out of itself
+        success = true
+      elseif already_entered[other] then
         current_mover.x, current_mover.y, current_mover.room = tile.parent:getParadoxEntry(tile)
         success = true
       else
@@ -181,13 +184,18 @@ function Movement.getNextTile(tile, dir)
     if tile.room_key then
       if not tile.room then
         tile.room = Level:getRoom(tile.room_key)
+        Undo:add("create_room", tile.room.id, tile.id)
         tile.room.exit = tile
         tile.room:parse()
       end
       local ex, ey = tile.room:getEntry()
       return ex, ey, tile.room
     elseif tile.parent.exit and tile:hasRule("exit") then
-      return tile.parent.exit.x + dx, tile.parent.exit.y + dy, tile.parent:getParent()
+      if tile.parent:getParent() then
+        return tile.parent.exit.x + dx, tile.parent.exit.y + dy, tile.parent:getParent()
+      else
+        return tile.parent:getParadoxEntry(tile)
+      end
     end
   end
   return x, y, tile.parent

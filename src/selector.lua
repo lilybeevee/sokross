@@ -63,8 +63,12 @@ function Selector:draw()
       love.graphics.setColor(1, 1, 1, 0.2)
       love.graphics.rectangle("fill", 0, 0, self.grid, self.grid)
     end
-    love.graphics.translate(self.grid/2 - TILE_SIZE/2, self.grid/2 - TILE_SIZE/2)
+
     tile:draw(palette)
+    love.graphics.translate(self.grid/2, self.grid/2)
+    love.graphics.scale(0.5, 0.5)
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.draw(TILE_CANVAS, -TILE_CANVAS:getWidth()/2, -TILE_CANVAS:getHeight()/2)
     love.graphics.pop()
   end
 end

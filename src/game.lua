@@ -49,6 +49,7 @@ end
 
 function Game:doTurn(dir)
   self.update_room = {}
+  Undo.enabled = true
   Undo:new()
   self.turn = self.turn + 1
   Movement.move(dir)
@@ -58,6 +59,7 @@ function Game:doTurn(dir)
   Level.room:updateLines()
   Level.room:updateTiles()
   self:playSounds()
+  Undo.enabled = false
 end
 
 function Game:playSounds()
@@ -142,6 +144,7 @@ function Game:doTransitions()
                 if not tile.room then
                   tile.room = Level:getRoom(tile.room_key)
                   tile.room.exit = tile
+                  Undo:add("create_room", tile.room.id, tile.id)
                   tile.room:parse()
                 end
                 local ex, ey = tile.room:getEntry()

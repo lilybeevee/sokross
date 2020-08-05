@@ -1,5 +1,7 @@
 local Undo = {}
 
+Undo.enabled = false
+
 function Undo:clear()
   self.index = 0
   self.buffer = {}
@@ -11,7 +13,9 @@ function Undo:new()
 end
 
 function Undo:add(...)
-  table.insert(self.buffer[self.index], 1, {...})
+  if self.enabled then
+    table.insert(self.buffer[self.index], 1, {...})
+  end
 end
 
 function Undo:goTo(i)
@@ -51,7 +55,48 @@ function Undo:doUndo(undo)
       end
     end
 
-    tile:moveTo(x, y, room, dir or tile.dir)
+    tile:moveTo(x, y, room, dir or tile.dir, true)
+  elseif action == "remove" then
+    local tiledata, roomid = undo[2], undo[3]
+
+    local tile = Tile.load(tiledata)
+    local room = Level.rooms_by_id[roomid]
+
+    room:addTile(tile, true)
+
+    if tile.word then
+      Game.parse_room[room] = true
+    end
+  elseif action == "add" then
+    local tileid = undo[2]
+
+    local tile = Level.tiles_by_id[tileid]
+    local room = tile.parent
+
+    room:removeTile(tile, true)
+
+    if tile.word then
+      Game.parse_room[room] = true
+    end
+  elseif action == "create_room" then
+    local roomid, exitid = undo[2], undo[3]
+
+    local room = Level.rooms_by_id[roomid]
+    local exit = Level.tiles_by_id[exitid]
+
+    room:remove()
+    exit.room = nil
+  elseif action == "create_paradox" then
+    local roomid, baseid = undo[2], undo[3]
+
+    local room = Level.rooms_by_id[roomid]
+    local base = Level.rooms_by_id[baseid]
+
+    room:remove()
+    base.paradox_room = nil
+  elseif action == "update_persist" then
+    local key, data = undo[2], undo[3]
+    Level.persists[key] = data
   end
 end
 

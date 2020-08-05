@@ -2,6 +2,7 @@ local Rules = Class{}
 
 function Rules:init(room)
   self.room = room
+  self.inherited_rules = {}
   self:clear()
 end
 
@@ -34,6 +35,20 @@ function Rules:addInherents()
   --addRule("belt", "move")
 end
 
+function Rules:addInherited()
+  if self.room:getParent() then
+    self.inherited_rules = {}
+    for _,raw in ipairs(self.room:getParent().rules.raw_rules) do
+      table.insert(self.inherited_rules, raw)
+      table.insert(self.raw_rules, raw)
+    end
+  else
+    for _,raw in ipairs(self.inherited_rules) do
+      table.insert(self.raw_rules, raw)
+    end
+  end
+end
+
 function Rules:get(target, effect)
   local result = {}
   for _,rule in ipairs(self.rules) do
@@ -54,11 +69,7 @@ function Rules:parse()
   self.raw_rules = self:buildRaw()
 
   -- copy raw rules from above layers
-  if self.room.exit then
-    for _,raw in ipairs(self.room:getParent().rules.raw_rules) do
-      table.insert(self.raw_rules, raw)
-    end
-  end
+  self:addInherited()
 
   -- parse raw rules into the rules table
   for _,raw in ipairs(self.raw_rules) do

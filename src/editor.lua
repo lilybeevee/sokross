@@ -112,7 +112,7 @@ function Editor:keypressed(key)
       local paradox_room = Level:getRoom(Level.room.paradox_key)
       Level:changeRoom(paradox_room)
     end
-  elseif key == "t" then
+  elseif key == "l" then
     if self.brush.name == "room" or self.brush.name == "line" then
       self.brush.locked = not self.brush.locked
     end
@@ -146,6 +146,8 @@ function Editor:keypressed(key)
     elseif Level.room.palette == "pink" then
       Level.room.palette = "default"
     end
+  elseif key == "p" then
+    self.brush.persist = not self.brush.persist
   elseif key == "d" and self.brush then
     self.brush.dir = 1
   elseif key == "s" and self.brush then
@@ -370,33 +372,27 @@ function Editor:draw()
   love.graphics.draw(starsprite)
   love.graphics.pop()
 
-  if self.brush or self.placing_entrance then
-    love.graphics.push()
-
-    love.graphics.setCanvas(self.brush_canvas)
-    love.graphics.clear()
-    love.graphics.origin()
-    love.graphics.translate(TILE_SIZE*2, TILE_SIZE*2)
-    love.graphics.scale(2, 2)
-    love.graphics.translate(-TILE_SIZE/2, -TILE_SIZE/2)
-    if self.placing_entrance then
-      if self:isStart() then
-        palette:setColor(7, 3)
-      else
-        palette:setColor(6, 3)
-      end
-      local sprite = Assets.sprites["tiles/star"]
-      love.graphics.draw(sprite)
-    else
-      self.brush:draw(palette)
-    end
-    love.graphics.setCanvas()
-    love.graphics.pop()
+  if self.placing_entrance then
+    love.graphics.translate(self.mx*TILE_SIZE, self.my*TILE_SIZE)
+    love.graphics.setColor(r,g,b,0.5)
+    love.graphics.draw(starsprite)
+  elseif self.brush then
+    self.brush:draw(palette)
 
     love.graphics.translate(self.mx*TILE_SIZE + TILE_SIZE/2, self.my*TILE_SIZE + TILE_SIZE/2)
     love.graphics.scale(0.5, 0.5)
+
+    if self.brush.persist then -- draw greennesss
+      local r,g,b = palette:getColor(6, 3)
+      love.graphics.setColor(r, g, b, 0.5)
+      love.graphics.setShader(OUTLINE_SHADER)
+      OUTLINE_SHADER:send("pixelsize", {1/TILE_CANVAS:getWidth(), 1/TILE_CANVAS:getHeight()})
+      OUTLINE_SHADER:send("size", 3)
+      love.graphics.draw(TILE_CANVAS, -TILE_CANVAS:getWidth()/2, -TILE_CANVAS:getHeight()/2)
+      love.graphics.setShader()
+    end
     love.graphics.setColor(1, 1, 1, 0.5)
-    love.graphics.draw(self.brush_canvas, -self.brush_canvas:getWidth()/2, -self.brush_canvas:getHeight()/2)
+    love.graphics.draw(TILE_CANVAS, -TILE_CANVAS:getWidth()/2, -TILE_CANVAS:getHeight()/2)
   end
 end
 

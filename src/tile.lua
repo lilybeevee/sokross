@@ -5,6 +5,7 @@ function Tile:init(name, x, y, o)
 
   if o.id then
     self.id = o.id
+    Level.tiles_by_id[self.id] = self
   elseif not Level.static then
     self.id = Level.tile_id
     Level.tile_id = Level.tile_id + 1
@@ -19,8 +20,6 @@ function Tile:init(name, x, y, o)
     self.key = tostring(Level.tile_key + 1)
     Level.tile_key = Level.tile_key + 1
   end
-  Level.tiles_by_key[self.key] = Level.tiles_by_key[self.key] or {}
-  table.insert(Level.tiles_by_key[self.key], self)
 
   self.parent = o.parent
   self.name = name
@@ -34,6 +33,7 @@ function Tile:init(name, x, y, o)
   self.room = o.room
   self.activator = o.activator
   self.locked = o.locked or false
+  self.persist = o.persist or false
   
   if o.word then
     self.wordname = o.word
@@ -114,11 +114,21 @@ function Tile:remove()
   Utils.removeFromTable(Level.tiles_by_key[self.key], self)
 end
 
+function Tile:add()
+  if not Level.static then
+    Level.tiles_by_id[self.id] = self
+  end
+  Level.tiles_by_key[self.key] = Level.tiles_by_key[self.key] or {}
+  table.insert(Level.tiles_by_key[self.key], self)
+end
+
 function Tile:hasRule(effect)
   return self.parent:hasRule(self.name, effect)
 end
 
-function Tile:moveTo(x, y, room, dir)
+function Tile:moveTo(x, y, room, dir, ignore_persist)
+  local undo_move_args = {self.id, self.x, self.y, self.dir, self.parent.id}
+
   if not dir then
     dir = Dir.fromPos(x-self.x, y-self.y) or self.dir
   end
@@ -129,23 +139,75 @@ function Tile:moveTo(x, y, room, dir)
       room:enter(self, dir)
     end
 
-    self.parent:removeTile(self)
-    self.x, self.y = x, y
-    room:addTile(self)
+    local last_parent = self.parent
+    local last_parent_parent = self.parent:getParent()
+    if self.persist and not ignore_persist then
+      Undo:add("remove", self:save(true), self.parent.id)
+      Undo:add("update_persist", self.key, Level.persists[self.key])
+      self.parent:removeTile(self, ignore_persist)
+      self.x, self.y = x, y
+      Level.persists[self.key] = self:save()
+      if not (last_parent:getParent() ~= last_parent_parent and last_parent.key == room.key) then -- only fails for a persistent room exiting itself
+        local tile = Tile.load(Level.persists[self.key])
+        Undo:add("add", tile.id)
+        room:addTile(tile, ignore_persist)
+      end
+    else
+      self.parent:removeTile(self, ignore_persist)
+      self.x, self.y = x, y
+      Undo:add("move", unpack(undo_move_args))
+      room:addTile(self, ignore_persist)
+    end
   else
     Utils.removeFromTable(self.parent.tiles_by_pos[self.x..","..self.y], self)
     self.x, self.y = x, y
     self.parent.tiles_by_pos[self.x..","..self.y] = self.parent.tiles_by_pos[self.x..","..self.y] or {}
     table.insert(self.parent.tiles_by_pos[self.x..","..self.y], self)
+    if not ignore_persist then
+      self:updatePersistence()
+    end
+    Undo:add("move", unpack(undo_move_args))
   end
   if room then
-    room:parseIfNecessary()
     Game.update_room[room] = true
   end
 end
 
+function Tile:updatePersistence()
+  if Level.persists[self.key] and not Level.static then
+    if self.persist then
+      Undo:add("update_persist", self.key, Level.persists[self.key])
+      Level.persists[self.key] = self:save()
+      for _,tile in ipairs(Level.tiles_by_key[self.key] or {}) do
+        if tile ~= self then
+          tile:moveTo(self.x, self.y, nil, self.dir, true)
+          tile.locked = self.locked
+          if tile.word then
+            Game.parse_room[tile.parent] = true
+          end
+        end
+      end
+    else
+      Undo:add("update_persist", self.key, Level.persists[self.key])
+      Level.persists[self.key] = nil
+      local to_remove = {}
+      for _,tile in ipairs(Level.tiles_by_key[self.key] or {}) do
+        if tile ~= self then
+          table.insert(to_remove, tile)
+        end
+      end
+      for _,tile in ipairs(to_remove) do
+        if tile.word then
+          Game.parse_room[tile.parent] = true
+        end
+        Undo:add("remove", tile:save(true), tile.parent.id)
+        tile.parent:removeTile(tile, true)
+      end
+    end
+  end
+end
+
 function Tile:goToParadox()
-  Undo:add("move", self.id, self.x, self.y, self.dir, self.parent.id)
   if self:hasRule("play") then
     Game.sound["paradox"] = true
   else
@@ -204,7 +266,11 @@ end
 
 function Tile:draw(palette)
   love.graphics.push()
-  love.graphics.translate(TILE_SIZE/2, TILE_SIZE/2)
+  love.graphics.setCanvas(TILE_CANVAS)
+  love.graphics.clear()
+  love.graphics.origin()
+  love.graphics.translate(TILE_SIZE*2, TILE_SIZE*2)
+  love.graphics.scale(2, 2)
 
   if self.tile.rotate then
     love.graphics.rotate(math.rad((self.dir-1) * 90))
@@ -321,6 +387,7 @@ function Tile:draw(palette)
     end
   end
 
+  love.graphics.setCanvas()
   love.graphics.pop()
 end
 
@@ -342,6 +409,7 @@ function Tile:copy()
     room_key = self.room_key,
     activator = self.activator,
     locked = self.locked,
+    persist = self.persist,
   })
   if tile.room_key then
     tile.room = Level:getRoom(tile.room_key)
@@ -349,7 +417,7 @@ function Tile:copy()
   return tile
 end
 
-function Tile:save()
+function Tile:save(instance)
   local data = {}
 
   data.name = self.name
@@ -368,19 +436,34 @@ function Tile:save()
   end
   data.activator = self.activator
   data.locked = self.locked
+  data.persist = self.persist
+
+  if instance then
+    data.id = self.id
+    if self.room then
+      data.room_id = self.room.id
+    end
+  end
 
   return data
 end
 
 function Tile.load(data)
+  local room
+  if data.room_id then
+    room = Level.rooms_by_id[data.room_id]
+  end
   return Tile(data.name, data.x, data.y, {
+    id = data.id,
     key = data.key,
     dir = data.dir,
     word = data.word,
     sides = data.sides,
+    room = room,
     room_key = data.room,
     activator = data.activator,
     locked = data.locked,
+    persist = data.persist,
   })
 end
 

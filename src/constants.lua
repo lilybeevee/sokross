@@ -26,3 +26,25 @@ DEFAULT_RULES = {
 }
 
 TILE_ACTIVATORS = {"box", "flof", "ladder", "room", "rule", "wall"}
+
+
+TILE_CANVAS = love.graphics.newCanvas(TILE_SIZE*4, TILE_SIZE*4)
+
+OUTLINE_SHADER = love.graphics.newShader([[
+	extern vec2 pixelsize;
+	extern float size = 1;
+
+	vec4 effect(vec4 color, Image texture, vec2 uv, vec2 fc) {
+    float a = 0;
+    if(Texel(texture, uv).a == 0) {
+      for(float y = -size; y <= size; ++y) {
+        for(float x = -size; x <= size; ++x) {
+          a += Texel(texture, uv + vec2(x * pixelsize.x, y * pixelsize.y)).a;
+        }
+      }
+    }
+    a = color.a * min(1, a);
+
+		return vec4(color.rgb, a);
+	}
+]])

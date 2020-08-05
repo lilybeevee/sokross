@@ -9,6 +9,10 @@ function Room:init(width, height, o)
     self.id = Level.room_id
     Level.room_id = Level.room_id + 1
     Level.rooms_by_id[self.id] = self
+    if not o.static then
+      Level.rooms_by_key[o.key] = Level.rooms_by_key[o.key] or {}
+      table.insert(Level.rooms_by_key[o.key], self)
+    end
   else
     self.id = 0
   end
@@ -17,6 +21,7 @@ function Room:init(width, height, o)
   self.height = height
 
   self.key = o.key
+  self.static = o.static or false
   self.palette = o.palette or "default"
   self.exit = o.exit
   self.entry = o.entry
@@ -44,6 +49,18 @@ function Room:init(width, height, o)
   self.rules = Rules(self)
   self.rules:addInherents()
   self.last_parsed = 0
+end
+
+function Room:remove()
+  if not Level.static then
+    Level.rooms_by_id[self.id] = nil
+    if not self.static then
+      Utils.removeFromTable(Level.rooms_by_key[self.key], self)
+    end
+  end
+  for _,tile in ipairs(self.tiles) do
+    tile:remove()
+  end
 end
 
 function Room:getParent()
@@ -77,7 +94,7 @@ function Room:enter(tile, dir)
     end
     self.exit_dir = Dir.reverse(dir) or self.exit_dir
   end
-  if self.last_parsed == 0 or (self.exit and self:getParent().last_parsed > self.last_parsed) then
+  if self.last_parsed == 0 or (self:getParent() and self:getParent().last_parsed > self.last_parsed) then
     self:parse()
   end
 end
@@ -90,7 +107,7 @@ function Room:getEntry()
   end
 end
 
-function Room:addTile(tile)
+function Room:addTile(tile, ignore_persist)
   table.insert(self.tiles, tile)
 
   tile.parent = self
@@ -108,13 +125,55 @@ function Room:addTile(tile)
   end
 
   table.insert(self.tiles_by_layer[tile.layer], tile)
+
+  if tile.persist and not Level.static then
+    if not Utils.contains(Level.persists_in_room[self.key], tile.key) then
+      if not Level.persists[tile.key] then
+        Level.persists[tile.key] = tile:save()
+      end
+      table.insert(Level.persists_in_room[self.key], tile.key)
+
+      if not ignore_persist then
+        for _,room in ipairs(Level.rooms_by_key[self.key] or {}) do
+          if room ~= self then
+            local tile = Tile.load(Level.persists[tile.key])
+            Undo:add("add", tile.id)
+            room:addTile(tile, true)
+            Game.parse_room[room] = true
+          end
+        end
+      end
+    end
+  end
+
+  tile:add()
+  return tile
 end
 
-function Room:removeTile(tile)
+function Room:removeTile(tile, ignore_persist)
   Utils.removeFromTable(self.tiles, tile)
   Utils.removeFromTable(self.tiles_by_pos[tile.x..","..tile.y], tile)
   Utils.removeFromTable(self.tiles_by_name[tile.name], tile)
   Utils.removeFromTable(self.tiles_by_layer[tile.layer], tile)
+  if tile.persist and not Level.static then
+    Utils.removeFromTable(Level.persists_in_room[self.key], tile.key)
+
+    if not ignore_persist then
+      local to_remove = {}
+      for _,linked in ipairs(Level.tiles_by_key[tile.key] or {}) do
+        if linked ~= tile then
+          table.insert(to_remove, linked)
+        end
+      end
+      for _,linked in ipairs(to_remove) do
+        Game.parse_room[linked.parent] = true
+        Undo:add("remove", linked:save(true), linked.parent.id)
+        linked.parent:removeTile(linked, true)
+      end
+    end
+  end
+  tile:remove()
+  tile.parent = nil
 end
 
 function Room:updateLines()
@@ -198,9 +257,23 @@ function Room:draw()
 
   for i=1,7 do
     for _,tile in ipairs(self.tiles_by_layer[i]) do
-      love.graphics.push()
-      love.graphics.translate(tile.x*TILE_SIZE, tile.y*TILE_SIZE)
       tile:draw(palette)
+
+      love.graphics.push()
+      love.graphics.translate(tile.x*TILE_SIZE + TILE_SIZE/2, tile.y*TILE_SIZE + TILE_SIZE/2)
+      love.graphics.scale(0.5, 0.5)
+
+      if tile.persist then -- draw greennesss
+        palette:setColor(6, 3)
+        love.graphics.setShader(OUTLINE_SHADER)
+        OUTLINE_SHADER:send("pixelsize", {1/TILE_CANVAS:getWidth(), 1/TILE_CANVAS:getHeight()})
+        OUTLINE_SHADER:send("size", 3)
+        love.graphics.draw(TILE_CANVAS, -TILE_CANVAS:getWidth()/2, -TILE_CANVAS:getHeight()/2)
+        love.graphics.setShader()
+      end
+      love.graphics.setColor(1, 1, 1)
+      love.graphics.draw(TILE_CANVAS, -TILE_CANVAS:getWidth()/2, -TILE_CANVAS:getHeight()/2)
+
       love.graphics.pop()
     end
   end
@@ -224,22 +297,27 @@ function Room:getParadoxEntry(tile)
     local room = Level:getRoom(self.paradox_key)
     self.paradox_room = room
     room.exit = self.exit
+    Undo:add("create_paradox", room.id, self.id)
+    room.rules.inherited_rules = self.rules.inherited_rules
     local x, y = getCoordsTo(room)
     return x, y, room
   else
     if self.paradox then
       local room = Level:getVoid()
       room.exit = self.exit
+      room.rules.inherited_rules = self.rules.inherited_rules
       local x, y = getCoordsTo(room)
       return x, y, room
     elseif self.void then
       if tile:hasRule("play") then
         local room = Level:getHeaven()
         room.exit = self.exit
+        room.rules.inherited_rules = self.rules.inherited_rules
         return 2, 2, room
       else
         local room = Level:getVoid()
         room.exit = self.exit
+        room.rules.inherited_rules = self.rules.inherited_rules
         local x, y = getCoordsTo(room)
         return x, y, room
       end
@@ -248,6 +326,8 @@ function Room:getParadoxEntry(tile)
       self.paradox_room = room
       self.paradox_key = room.key
       room.exit = self.exit
+      Undo:add("create_paradox", room.id, self.id)
+      room.rules.inherited_rules = self.rules.inherited_rules
       local x, y = getCoordsTo(room)
       return x, y, room
     end
@@ -322,8 +402,18 @@ function Room.load(data)
     entry = data.entry,
   })
 
+  local already_added = {}
   for _,tiledata in ipairs(data.tiles) do
-    room:addTile(Tile.load(tiledata))
+    if Level.static or not tiledata.persist or not Level.persists[tiledata.key] then
+      already_added[tiledata.key] = true
+      room:addTile(Tile.load(tiledata))
+    end
+  end
+
+  for _,persisted in ipairs(Level.persists_in_room[room.key] or {}) do
+    if not already_added[persisted] then
+      room:addTile(Tile.load(Level.persists[persisted]), true)
+    end
   end
 
   return room

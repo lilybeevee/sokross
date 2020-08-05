@@ -38,6 +38,9 @@ function Level:clear()
   self.tiles_by_id = {}
   self.tiles_by_key = {}
   self.rooms_by_id = {}
+  self.rooms_by_key = {}
+  self.persists = {}
+  self.persists_in_room = {}
 
   self.paradox_keys = {}
   self.void_room = nil
@@ -81,7 +84,11 @@ function Level:changeRoom(room, small)
     for _,tile in ipairs(room.tiles_by_name["room"] or {}) do
       if tile.room_key and not tile.room then
         tile.room = self:getRoom(tile.room_key)
+        Undo:add("create_room", tile.room.id, tile.id)
         tile.room.exit = tile
+        if not self.static then
+          tile.room:parse()
+        end
       end
     end
   end
@@ -113,6 +120,7 @@ function Level:addRoom(room)
   end
   self.rooms[room.key] = room
   self.has_room[room.key] = true
+  self.persists_in_room[room.key] = {}
   return room.key
 end
 
@@ -172,7 +180,9 @@ function Level:load(name)
       local files = love.filesystem.getDirectoryItems(dir)
       for _,file in ipairs(files) do
         if file:sub(-5) == ".room" then
-          self.has_room[(d and (d.."/") or "")..file:sub(1, -6)] = true
+          local roomkey = (d and (d.."/") or "")..file:sub(1, -6)
+          self.has_room[roomkey] = true
+          self.persists_in_room[roomkey] = {}
         elseif love.filesystem.getInfo(dir .. file).type == "directory" then
           findRooms((d and (d.."/") or "")..file)
         end
@@ -260,7 +270,7 @@ function Level:merge(basedir, name)
 end
 
 function Level:generateDefaults()
-  local room1 = Room(12, 12, {entry = {0, 11}})
+  local room1 = Room(12, 12, {entry = {0, 11}, static = true})
   self:addRoom(room1)
 
   local x, y = 0, 0
@@ -284,7 +294,7 @@ function Level:generateDefaults()
   local room2 = Room(7, 7)
   self:addRoom(room2)
 
-  local room2_portal = Tile("room", 11, 11, {room_key = room2.key})
+  local room2_portal = Tile("room", 11, 11, {room_key = room2.key, static = true})
   room1:addTile(room2_portal)
 
   self.start = {room2_portal.key}
@@ -296,7 +306,7 @@ end
 function Level:getParadox(ref)
   local idstr = ref.width..","..ref.height
   if not self.paradox_keys[idstr] then
-    local room = Room(ref.width, ref.height, {paradox = true, palette = "paradox"})
+    local room = Room(ref.width, ref.height, {paradox = true, palette = "paradox", static = true})
     room:addTile(Tile("tile", math.floor(room.width/2), math.floor(room.height/2), {activator = self.player}))
     self.paradox_keys[idstr] = self:addRoom(room)
   end
@@ -313,7 +323,7 @@ end
 
 function Level:getHeaven()
   if not self.heaven_key then
-    local room = Room(9, 5, {heaven = true})
+    local room = Room(9, 5, {heaven = true, static = true})
     room:addTile(Tile("tile", 6, 2, {activator = self.player}))
     self.heaven_key = self:addRoom(room)
   end

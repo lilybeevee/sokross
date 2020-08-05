@@ -58,6 +58,17 @@ function dump(o)
   end
 end
 
+function Utils.isEmpty(v)
+  if type(v) == "nil" then
+    return true
+  elseif type(v) == "string" then
+    return v == ""
+  elseif type(v) == "table" then
+    return #v == 0
+  end
+  return false
+end
+
 function Utils.copy(obj, deep)
   if type(obj) == "table" then
     local ret = {}
@@ -88,6 +99,15 @@ function Utils.removeFromTable(t, value)
       return
     end
   end
+end
+
+function Utils.contains(t, value)
+  for k,v in pairs(t) do
+    if v == value then
+      return true
+    end
+  end
+  return false
 end
 
 function Utils.saveTable(t)
