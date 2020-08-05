@@ -187,14 +187,10 @@ function Room:draw()
 
   for x = 0, self.width-1 do
     for y = 0, self.height-1 do
-      if self.void then
-        love.graphics.setColor(0, 0, 0)
+      if (x+y) % 2 == 0 then
+        palette:setColor(8, 1)
       else
-        if (x+y) % 2 == 0 then
-          palette:setColor(8, 1)
-        else
-          palette:setColor(8, 2)
-        end
+        palette:setColor(8, 2)
       end
       love.graphics.rectangle("fill", x*TILE_SIZE, y*TILE_SIZE, TILE_SIZE, TILE_SIZE)
     end
@@ -227,6 +223,7 @@ function Room:getParadoxEntry(tile)
   elseif self.paradox_key then
     local room = Level:getRoom(self.paradox_key)
     self.paradox_room = room
+    room.exit = self.exit
     local x, y = getCoordsTo(room)
     return x, y, room
   else
@@ -281,7 +278,7 @@ function Room:win()
       end
       self:getParent():addTile(exiter)
       Level:changeRoom(self:getParent())
-      self.exit.room = Level:getRoom(self.key)
+      self.exit.room = Level:getRoom(self.exit.room_key)
       self.exit.room.exit = self.exit
     else -- ideally this can't happen unless you're just playtesting from editor
       Gamestate.switch(Editor)

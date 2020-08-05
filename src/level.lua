@@ -305,7 +305,7 @@ end
 
 function Level:getVoid()
   if not self.void_room then
-    self.void_room = Room(0, 0, {void = true})
+    self.void_room = Room(0, 0, {void = true, palette = "void"})
     self:addRoom(self.void_room)
   end
   return self.void_room
