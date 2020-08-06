@@ -34,6 +34,7 @@ function Tile:init(name, x, y, o)
   self.activator = o.activator
   self.locked = o.locked or false
   self.persist = o.persist or false
+  self.icy = o.icy or false
   
   if o.word then
     self.wordname = o.word
@@ -419,7 +420,6 @@ function Tile:draw(palette)
 
     for i,spritename in ipairs(sprites) do
       palette:setColor(colors[i][1], colors[i][2])
-
       local sprite = Assets.sprites["tiles/"..spritename]
       if self.tile.walk and self.walk_frame then
         sprite = Assets.sprites["tiles/"..spritename.."_walk"]
@@ -451,6 +451,7 @@ function Tile:copy()
     activator = self.activator,
     locked = self.locked,
     persist = self.persist,
+    icy = self.icy,
   })
   if tile.room_key then
     tile.room = Level:getRoom(tile.room_key)
@@ -478,6 +479,7 @@ function Tile:save(instance)
   data.activator = self.activator
   data.locked = self.locked
   data.persist = self.persist
+  data.icy = self.icy
 
   if instance then
     data.id = self.id
@@ -505,6 +507,7 @@ function Tile.load(data)
     activator = data.activator,
     locked = data.locked,
     persist = data.persist,
+    icy = data.icy,
   })
 end
 

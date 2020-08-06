@@ -35,22 +35,26 @@ end
 
 function dump(o)
   if type(o) == 'table' then
-    local s = '{'
-    local cn = 1
-    if #o ~= 0 then
-      for _,v in ipairs(o) do
-        if cn > 1 then s = s .. ',' end
-        s = s .. dump(v)
-        cn = cn + 1
-      end
+    if o.__index == Tile then
+      return "("..o.name..":"..o.id..","..o.x..","..o.y..")"
     else
-      for k,v in pairs(o) do
-        if cn > 1 then s = s .. ',' end
-        s = s .. dump(k) .. ' = ' .. dump(v)
-        cn = cn + 1
+      local s = '{'
+      local cn = 1
+      if #o ~= 0 then
+        for _,v in ipairs(o) do
+          if cn > 1 then s = s .. ',' end
+          s = s .. dump(v)
+          cn = cn + 1
+        end
+      else
+        for k,v in pairs(o) do
+          if cn > 1 then s = s .. ',' end
+          s = s .. dump(k) .. ' = ' .. dump(v)
+          cn = cn + 1
+        end
       end
+      return s .. '}'
     end
-    return s .. '}'
   elseif type(o) == 'string' then
     return '"' .. o .. '"'
   else

@@ -86,6 +86,35 @@ end
 function Editor:keypressed(key)
   if key == "tab" then
     self:openTileSelector()
+  elseif key == "d" and self.brush then
+    self.brush.dir = 1
+  elseif key == "s" and self.brush and not love.keyboard.isDown("ctrl") then
+    self.brush.dir = 2
+  elseif key == "a" and self.brush then
+    self.brush.dir = 3
+  elseif key == "w" and self.brush then
+    self.brush.dir = 4
+  elseif key == "right" and love.keyboard.isDown("ctrl") then
+    self:resize(Level.room.width+1, Level.room.height)
+  elseif key == "left" and love.keyboard.isDown("ctrl") then
+    self:resize(Level.room.width-1, Level.room.height)
+  elseif key == "down" and love.keyboard.isDown("ctrl") then
+    self:resize(Level.room.width, Level.room.height+1)
+  elseif key == "up" and love.keyboard.isDown("ctrl") then
+    self:resize(Level.room.width, Level.room.height-1)
+  elseif key == "=" then
+    self:resize(Level.room.width+1, Level.room.height+1)
+  elseif key == "-" then
+    self:resize(Level.room.width-1, Level.room.height-1)
+  elseif key == "c" then
+    -- feature: good coding
+    if Level.room.palette == "default" then
+      Level.room.palette = "blue"
+    elseif Level.room.palette == "blue" then
+      Level.room.palette = "pink"
+    elseif Level.room.palette == "pink" then
+      Level.room.palette = "default"
+    end
   elseif key == "q" then
     if love.keyboard.isDown("ctrl") then
       if not Level.room.paradox then
@@ -123,10 +152,14 @@ function Editor:keypressed(key)
       local paradox_room = Level:getRoom(Level.room.paradox_key)
       Level:changeRoom(paradox_room)
     end
+  elseif key == "p" then
+    self.brush.persist = not self.brush.persist
   elseif key == "l" then
     if self.brush.name == "room" or self.brush.name == "line" then
       self.brush.locked = not self.brush.locked
     end
+  elseif key == "i" then
+    self.brush.icy = not self.brush.icy
   elseif key == "s" and love.keyboard.isDown("ctrl") then
     if Level.new or love.keyboard.isDown("shift") then
       Gamestate.push(TextInput, "File to save level as:", not Level.new and Level.name or "", function(text)
@@ -136,43 +169,17 @@ function Editor:keypressed(key)
     else
       Level:save()
     end
+  elseif key == "o" and love.keyboard.isDown("ctrl") then
+    Gamestate.push(TextInput, "Enter file name to load:", "", function(text)
+      print("Loading "..text)
+      Level:load(text)
+      Level.room:updateVisuals()
+      self:buildRoomTree()
+    end)
   elseif key == "m" and love.keyboard.isDown("ctrl") then
     Gamestate.push(TextInput, "Level name to merge:", "", function(text)
       self:merge(text)
     end)
-  elseif key == "c" then
-    -- feature: good coding
-    if Level.room.palette == "default" then
-      Level.room.palette = "blue"
-    elseif Level.room.palette == "blue" then
-      Level.room.palette = "pink"
-    elseif Level.room.palette == "pink" then
-      Level.room.palette = "default"
-    end
-  elseif key == "p" then
-    self.brush.persist = not self.brush.persist
-  elseif key == "d" and self.brush then
-    self.brush.dir = 1
-  elseif key == "s" and self.brush then
-    self.brush.dir = 2
-  elseif key == "a" and self.brush then
-    self.brush.dir = 3
-  elseif key == "w" and self.brush then
-    self.brush.dir = 4
-  elseif key == "right" and love.keyboard.isDown("ctrl") then
-    self:resize(Level.room.width+1, Level.room.height)
-  elseif key == "left" and love.keyboard.isDown("ctrl") then
-    self:resize(Level.room.width-1, Level.room.height)
-  elseif key == "down" and love.keyboard.isDown("ctrl") then
-    self:resize(Level.room.width, Level.room.height+1)
-  elseif key == "up" and love.keyboard.isDown("ctrl") then
-    self:resize(Level.room.width, Level.room.height-1)
-  elseif key == "=" then
-    self:resize(Level.room.width+1, Level.room.height+1)
-  elseif key == "-" then
-    self:resize(Level.room.width-1, Level.room.height-1)
-  elseif key == "`" then --debug
-    print("nya")
   elseif key == "escape" then
     if #self.room_tree > 0 then
       Level:changeRoom(table.remove(self.room_tree, #self.room_tree).parent)
@@ -182,16 +189,8 @@ function Editor:keypressed(key)
       Level:save()
     end
     Gamestate.switch(Game)
-  elseif key == "o" and love.keyboard.isDown("ctrl") then
-    Gamestate.push(TextInput, "Enter file name to load:", "", function(text)
-      print("Loading "..text)
-      Level:load(text)
-      print("nya 1")
-      Level.room:updateVisuals()
-      print("nya 2")
-      self:buildRoomTree()
-      print("nya 3")
-    end)
+  elseif key == "`" then --debug
+    print("nya")
   end
 end
 
@@ -422,7 +421,11 @@ function Editor:draw()
       love.graphics.draw(TILE_CANVAS, -TILE_CANVAS:getWidth()/2, -TILE_CANVAS:getHeight()/2)
       love.graphics.setShader()
     end
-    love.graphics.setColor(1, 1, 1, 0.5)
+    if self.brush.icy then
+      love.graphics.setColor(0, 1, 1, 0.5)
+    else
+      love.graphics.setColor(1, 1, 1, 0.5)
+    end
     love.graphics.draw(TILE_CANVAS, -TILE_CANVAS:getWidth()/2, -TILE_CANVAS:getHeight()/2)
   end
 end

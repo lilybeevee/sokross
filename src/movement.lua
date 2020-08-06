@@ -62,6 +62,10 @@ function Movement.move(moves)
         Undo:add("move", mover.tile.id, mover.tile.x, mover.tile.y, undo_dir, undo_room)]]
 
         mover.tile:moveTo(mover.x, mover.y, mover.room, mover.dir)
+        if mover.tile.icy then
+          move_done = false
+          table.insert(still_moving, {tile = mover.tile, dir = mover.dir})
+        end
         has_moved[mover.tile] = true
       end
     end
@@ -73,7 +77,9 @@ function Movement.move(moves)
         table.insert(to_destroy, new)
       end
       
-      move_done = #new_moves == 0
+      if #new_moves > 0 then
+        move_done = false
+      end
       for _,new in ipairs(new_moves) do
         table.insert(still_moving, new)
       end

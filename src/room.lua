@@ -289,7 +289,11 @@ function Room:draw()
         love.graphics.draw(TILE_CANVAS, -TILE_CANVAS:getWidth()/2, -TILE_CANVAS:getHeight()/2)
         love.graphics.setShader()
       end
-      love.graphics.setColor(1, 1, 1)
+      if tile.icy then
+        love.graphics.setColor(0, 1, 1)
+      else
+        love.graphics.setColor(1, 1, 1)
+      end
       love.graphics.draw(TILE_CANVAS, -TILE_CANVAS:getWidth()/2, -TILE_CANVAS:getHeight()/2)
 
       love.graphics.pop()
