@@ -106,8 +106,10 @@ end
 
 function Game:handleDels(to_destroy)
   for _,tile in ipairs(to_destroy) do
-    Undo:add("remove", tile:save(true), tile.parent.id)
-    tile.parent:removeTile(tile)
+    if tile.parent then
+      Undo:add("remove", tile:save(true), tile.parent.id)
+      tile.parent:removeTile(tile)
+    end
   end
 end
 
