@@ -104,7 +104,7 @@ function Movement.move(dir)
   end
 end
 
-function Movement.canMove(tile, dir, enter, reason, already_entered)
+function Movement.canMove(tile, dir, enter, reason, pushing, already_entered)
   if tile.name == "room" then
     local conns = tile:getConnections("line")
     for _,conn in ipairs(conns) do
@@ -136,11 +136,14 @@ function Movement.canMove(tile, dir, enter, reason, already_entered)
 
     if other:hasRule("push") then
       pushable = true
-
-      local new_movers
-      success, new_movers = Movement.canMove(other, dir, false, "push")
-      if success then
-        Utils.merge(movers, new_movers)
+      if pushing and other:hasRule("heavy") then
+        success = false
+      else
+        local new_movers
+        success, new_movers = Movement.canMove(other, dir, false, "push", true)
+        if success then
+          Utils.merge(movers, new_movers)
+        end
       end
     elseif other:hasRule("stop") then
       moveable = false
@@ -165,7 +168,7 @@ function Movement.canMove(tile, dir, enter, reason, already_entered)
         success = true
       else
         already_entered[other] = true
-        success, new_movers = Movement.canMove(tile, dir, true, other_ladder and "exit" or "enter", already_entered)
+        success, new_movers = Movement.canMove(tile, dir, true, other_ladder and "exit" or "enter", pushing, already_entered)
         if success then
           current_mover = table.remove(new_movers, 1)
           Utils.merge(movers, new_movers)
@@ -174,7 +177,7 @@ function Movement.canMove(tile, dir, enter, reason, already_entered)
       end
     elseif is_entry and not success and moveable then
       local new_movers
-      success, new_movers = Movement.canMove(other, Dir.reverse(dir), true, is_ladder and "exit" or "enter")
+      success, new_movers = Movement.canMove(other, Dir.reverse(dir), true, is_ladder and "exit" or "enter", pushing)
       if success then
         Utils.merge(movers, new_movers)
       end

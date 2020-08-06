@@ -134,6 +134,13 @@ function Assets.addTiles()
       property = "push",
     },
     {
+      name = "crate",
+      sprites = {"crate", "crate_shade"},
+      colors = {{0, 2}, {0, 1}},
+      layer = 3,
+      property = "heavy",
+    },
+    {
       name = "ladder",
       sprites = {"ladder"},
       colors = {{3, 2}},
@@ -216,6 +223,18 @@ function Assets.addWords()
       color = 5,
     },
     {
+      name = "crate",
+      type = "noun",
+      color = 4,
+      dark = true,
+    },
+    {
+      name = "heavy",
+      type = "prop",
+      color = 0,
+      dark = true,
+    },
+    {
       name = "ladder",
       type = "noun",
       color = 3,
@@ -273,7 +292,7 @@ function Assets.addWords()
     {
       name = "flat",
       type = "prop",
-      color = 7,
+      color = 2,
       dark = true,
     },
     {
