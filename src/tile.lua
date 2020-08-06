@@ -67,7 +67,7 @@ function Tile:init(name, x, y, o)
   self.activated = false -- for tiles and rooms
 end
 
-function Tile:update()
+function Tile:updateVisuals()
   if self.word then
     local prev_active = Utils.copy(self.active_sides)
 
@@ -105,6 +105,45 @@ function Tile:update()
     end
   end
   self.first_update = false
+end
+
+function Tile:update()
+  local to_destroy = {}
+  local movers = {}
+  local has_belt = false
+  for _,other in ipairs(self.parent:getTilesAt(self.x, self.y)) do
+    if other ~= self then
+      if self:hasRule("move") then
+        table.insert(movers, {tile = other, dir = self.dir})
+      elseif self:hasRule("sink") then
+        Game.sound["sink"] = true
+        table.insert(to_destroy, self)
+        table.insert(to_destroy, other)
+      end
+      if other:hasRule("move") then
+        has_belt = true
+        if not self.belt_start then
+          self.belt_start = {other.x, other.y}
+          table.insert(movers, {tile = self, dir = other.dir})
+        else
+          if other.x == self.belt_start[1] and other.y == self.belt_start[2] then
+            self:goToParadox()
+            self.belt_start = nil
+          else
+            table.insert(movers, {tile = self, dir = other.dir})
+          end
+        end
+      elseif other:hasRule("sink") then
+        Game.sound["sink"] = true
+        table.insert(to_destroy, self)
+        table.insert(to_destroy, other)
+      end
+    end
+  end
+  if not has_belt then
+    self.belt_start = nil
+  end
+  return to_destroy, movers
 end
 
 function Tile:remove()

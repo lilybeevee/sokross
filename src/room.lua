@@ -211,10 +211,28 @@ function Room:updateLines()
   end
 end
 
-function Room:updateTiles()
+function Room:updateVisuals()
   for _,tile in ipairs(self.tiles) do
-    tile:update()
+    tile:updateVisuals()
   end
+end
+
+function Room:updateTiles()
+  local to_destroy = {}
+  local moves = {}
+  for _,tile in ipairs(self.tiles) do
+    if not Game.updated_tiles[tile] then
+      local new_to_destroy, new_moves = tile:update()
+      for _,new in ipairs(new_to_destroy) do
+        table.insert(to_destroy, new)
+      end
+      for _,new in ipairs(new_moves) do
+        table.insert(moves, new)
+      end
+    end
+  end
+  Game:handleDels(to_destroy)
+  Movement.move(moves)
 end
 
 function Room:getTilesAt(x, y)

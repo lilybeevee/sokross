@@ -11,7 +11,7 @@ function Editor:enter()
   else
     Level:reset()
   end
-  Level.room:updateTiles()
+  Level.room:updateVisuals()
 
   self.brush_canvas = love.graphics.newCanvas(TILE_SIZE*4, TILE_SIZE*4)
   self.brush = nil
@@ -172,7 +172,7 @@ function Editor:keypressed(key)
   elseif key == "-" then
     self:resize(Level.room.width-1, Level.room.height-1)
   elseif key == "`" then --debug
-    print(dump(Level.room.tiles_by_layer))
+    print("nya")
   elseif key == "escape" then
     if #self.room_tree > 0 then
       Level:changeRoom(table.remove(self.room_tree, #self.room_tree).parent)
@@ -187,7 +187,7 @@ function Editor:keypressed(key)
       print("Loading "..text)
       Level:load(text)
       print("nya 1")
-      Level.room:updateTiles()
+      Level.room:updateVisuals()
       print("nya 2")
       self:buildRoomTree()
       print("nya 3")
@@ -291,7 +291,7 @@ function Editor:placeTile(x,y,stack)
       new_tile.x = x
       new_tile.y = y
       Level.room:addTile(new_tile)
-      Level.room:updateTiles()
+      Level.room:updateVisuals()
     end
   end
 end
@@ -301,7 +301,7 @@ function Editor:eraseTile(x,y)
     for _,tile in ipairs(Level.room:getTilesAt(x,y)) do
       Level.room:removeTile(tile)
     end
-    Level.room:updateTiles()
+    Level.room:updateVisuals()
   end
 end
 

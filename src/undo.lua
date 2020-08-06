@@ -33,7 +33,7 @@ function Undo:back(count)
       self.index = self.index - 1
     end
   end
-  Level.room:updateTiles()
+  Level.room:updateVisuals()
   Game:playSounds()
 end
 

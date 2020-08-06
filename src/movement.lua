@@ -1,20 +1,24 @@
 local Movement = {}
 
-function Movement.move(dir)
-  Movement.moved_word = false
-
+function Movement.turn(dir)
   local moves = {}
-  local has_moved = {}
-
-  local playsound_push = false
-  local playsound_enter = false
-  local playsound_exit = false
-
   for _,playrule in ipairs(Level.room:getRules(nil, "play")) do
     for _,tile in ipairs(Level.room:getTilesByName(playrule.target)) do
       table.insert(moves, {tile = tile, dir = dir})
     end
   end
+  Movement.move(moves)
+end
+
+function Movement.move(moves)
+  Movement.moved_word = false
+
+  moves = moves or {}
+  local has_moved = {}
+
+  local playsound_push = false
+  local playsound_enter = false
+  local playsound_exit = false
 
   local move_done = false
   local to_destroy = {}
@@ -30,6 +34,7 @@ function Movement.move(dir)
           move_done = false
           Utils.merge(movers, new_movers)
         else
+          move.tile.belt_start = nil
           table.insert(still_moving, move)
         end
       end
@@ -57,35 +62,20 @@ function Movement.move(dir)
         Undo:add("move", mover.tile.id, mover.tile.x, mover.tile.y, undo_dir, undo_room)]]
 
         mover.tile:moveTo(mover.x, mover.y, mover.room, mover.dir)
-
         has_moved[mover.tile] = true
-        
-        local has_belt = false
-        for _,other in ipairs(mover.room:getTilesAt(mover.x, mover.y)) do
-          if other:hasRule("move") then
-            has_belt = true
-            if not mover.tile.belt_start then
-              mover.tile.belt_start = {other.x, other.y}
-              move_done = false
-              table.insert(still_moving, {tile = mover.tile, dir = other.dir})
-            else
-              if other.x == mover.tile.belt_start[1] and other.y == mover.tile.belt_start[2] then
-                mover.tile:goToParadox()
-                mover.tile.belt_start = nil
-              else
-                move_done = false
-                table.insert(still_moving, {tile = mover.tile, dir = other.dir})
-              end
-            end
-          elseif other:hasRule("sink") then
-            Game.sound["sink"] = true
-            table.insert(to_destroy, mover.tile)
-            table.insert(to_destroy, other)
-          end
-        end
-        if not has_belt then
-          mover.tile.belt_start = nil
-        end
+      end
+    end
+    for _,mover in ipairs(movers) do
+      local new_to_destroy, new_moves = mover.tile:update()
+      Game.updated_tiles[mover.tile] = true
+      
+      for _,new in ipairs(new_to_destroy) do
+        table.insert(to_destroy, new)
+      end
+      
+      move_done = #new_moves == 0
+      for _,new in ipairs(new_moves) do
+        table.insert(still_moving, new)
       end
     end
 
@@ -98,10 +88,7 @@ function Movement.move(dir)
     end
   end
   
-  for _,tile in ipairs(to_destroy) do
-    Undo:add("remove", tile:save(true), tile.parent.id)
-    tile.parent:removeTile(tile)
-  end
+  Game:handleDels(to_destroy)
 end
 
 function Movement.canMove(tile, dir, enter, reason, pushing, already_entered)

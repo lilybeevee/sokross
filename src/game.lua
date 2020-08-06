@@ -15,7 +15,7 @@ function Game:enter()
   
   Level.room:parse()
   Level.room:updateLines()
-  Level.room:updateTiles()
+  Level.room:updateVisuals()
   self.sound = {}
 
   self.move_key_buffer = {}
@@ -23,6 +23,7 @@ function Game:enter()
   self.undoing = false
   self.undo_timer = 0
   self.undo_timer_mult = 1
+  self.updated_tiles = {}
 
   --print(dump(Level.room.rules.rules))
 end
@@ -39,7 +40,7 @@ function Game:keypressed(key)
   elseif key == "r" then
     Level:reset()
     Level.room:updateLines()
-    Level.room:updateTiles()
+    Level.room:updateVisuals()
   elseif key == "return" then
     Gamestate.switch(Editor)
   elseif key == "`" then -- debug
@@ -88,17 +89,26 @@ end
 
 function Game:doTurn(dir)
   self.update_room = {}
+  self.updated_tiles = {}
   Undo.enabled = true
   Undo:new()
   self.turn = self.turn + 1
-  Movement.move(dir)
+  Movement.turn(dir)
   self:reparse()
   self:doTransitions()
+  Level.room:updateTiles()
   self:checkWin()
   Level.room:updateLines()
-  Level.room:updateTiles()
+  Level.room:updateVisuals()
   self:playSounds()
   Undo.enabled = false
+end
+
+function Game:handleDels(to_destroy)
+  for _,tile in ipairs(to_destroy) do
+    Undo:add("remove", tile:save(true), tile.parent.id)
+    tile.parent:removeTile(tile)
+  end
 end
 
 function Game:playSounds()
@@ -175,6 +185,9 @@ function Game:doTransitions()
                   other:goToParadox()
                 end
                 transitions_done = false
+                local to_destroy, moves = other:update()
+                Game:handleDels(to_destroy)
+                Movement.move(moves)
               end
             end
           end
@@ -204,6 +217,9 @@ function Game:doTransitions()
                 other:goToParadox()
               end
               transitions_done = false
+              local to_destroy, moves = other:update()
+              Game:handleDels(to_destroy)
+              Movement.move(moves)
             end
           end
         end
