@@ -81,6 +81,7 @@ function Editor:merge(name)
   local current_room = Level.room.key
   Level:reset()
   Level:changeRoom(current_room)
+  Level.room:updateVisuals()
 end
 
 function Editor:keypressed(key)
@@ -133,6 +134,7 @@ function Editor:keypressed(key)
         print("leaving paradox")
         local non_paradox_room = Level:getRoom(Level.room.non_paradox_key)
         Level:changeRoom(non_paradox_room)
+        Level.room:updateVisuals()
       else
         print("creating paradox")
         local new_paradox_room = Room(Level.room.width, Level.room.height, {
@@ -146,11 +148,13 @@ function Editor:keypressed(key)
         Level.room.paradox_room = new_paradox_room
         Level.room.paradox_key = new_paradox_room.key
         Level:changeRoom(new_paradox_room)
+        Level.room:updateVisuals()
       end
     else
       print("going to paradox")
       local paradox_room = Level:getRoom(Level.room.paradox_key)
       Level:changeRoom(paradox_room)
+      Level.room:updateVisuals()
     end
   elseif key == "p" then
     self.brush.persist = not self.brush.persist
@@ -236,6 +240,7 @@ function Editor:mousepressed(x, y, btn)
             end
             table.insert(self.room_tree, tile)
             Level:changeRoom(tile.room_key)
+            Level.room:updateVisuals()
             return
           elseif tile.name == "tile" then
             self:selectTileActivator(tile)

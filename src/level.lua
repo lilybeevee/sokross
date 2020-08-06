@@ -194,6 +194,7 @@ function Level:load(name)
     self.tile_key = info.tile_key or 1
 
     local function findRooms(d)
+      local dir = dir
       if d then
         dir = dir .. d .. "/"
       end
@@ -244,6 +245,7 @@ function Level:merge(name)
       local newkey = name.."/"..roomkey
 
       local loadstr = love.filesystem.read(dir..roomkey..".room")
+      print(dir..roomkey..".room")
       local roomdata = Utils.loadTable(loadstr)
       
       roomdata.key = newkey
@@ -270,6 +272,7 @@ function Level:merge(name)
     end
 
     local function fixRooms(d)
+      local dir = dir
       if d then
         dir = dir .. d .. "/"
       end
