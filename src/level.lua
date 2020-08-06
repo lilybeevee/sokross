@@ -114,7 +114,7 @@ function Level:getRoom(key)
         return self.rooms[key]
       end
     else
-      local loadstr = love.filesystem.read("levels/"..self.name.."/"..key..".room")
+      local loadstr = love.filesystem.read("levels/"..Utils.toFileName(self.name).."/"..key..".room")
       local room = Room.load(Utils.loadTable(loadstr))
       if self.static then
         self.rooms[room.key] = room
@@ -141,13 +141,17 @@ function Level:newKey(prefix)
   return key
 end
 
-function Level:save()
+function Level:save(name)
   if not self.root then return end
 
-  love.filesystem.createDirectory("levels/"..self.name)
-  local dir = "levels/"..self.name.."/"
+  local filename = Utils.toFileName(name or self.name)
+  local old_name = Utils.toFileName(self.name)
+  local changed_name = not self.new and name ~= old_name
+
+  love.filesystem.createDirectory("levels/"..filename)
+  local dir = "levels/"..filename.."/"
   
-  for key,room in pairs(self.rooms) do
+  local function saveRoom(key, room)
     local tree = key:split("/")
     table.remove(tree, #tree)
     local subdir = table.concat(tree)
@@ -156,6 +160,21 @@ function Level:save()
     end
     local savestr = Utils.saveTable(room:save())
     love.filesystem.write(dir..key..".room", savestr)
+  end
+
+  if not changed_name then
+    for key,room in pairs(self.rooms) do
+      saveRoom(key, room)
+    end
+  else
+    for key,_ in pairs(self.has_room) do
+      local room = self:getRoom(key)
+      saveRoom(key, room)
+    end
+  end
+
+  if name then
+    self.name = name
   end
 
   local info = {
@@ -175,9 +194,14 @@ function Level:save()
     love.filesystem.unmount(self.mounted)
     self.mounted = nil
   end
+  if changed_name then
+    Utils.removeDirectory("levels/"..old_name)
+  end
 end
 
 function Level:load(name)
+  name = Utils.toFileName(name)
+
   if self.mounted then
     love.filesystem.unmount(self.mounted)
     self.mounted = nil
@@ -231,9 +255,10 @@ function Level:load(name)
 end
 
 function Level:merge(name)
+  name = Utils.toFileName(name)
   if love.filesystem.getInfo("levels/"..name) then
     local dir = "levels/"..name.."/"
-    local newdir = "levels/"..self.name.."/"..name.."/"
+    local newdir = "levels/"..Utils.toFileName(self.name).."/"..name.."/"
 
     Utils.removeDirectory(newdir)
     love.filesystem.createDirectory(newdir)

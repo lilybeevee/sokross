@@ -173,9 +173,8 @@ function Editor:keypressed(key)
     self.brush.icy = not self.brush.icy
   elseif key == "s" and love.keyboard.isDown("ctrl") then
     if Level.new or love.keyboard.isDown("shift") then
-      Gamestate.push(TextInput, "File to save level as:", not Level.new and Level.name or "", function(text)
-        Level.name = text
-        Level:save()
+      Gamestate.push(TextInput, "New level name:", not Level.new and Level.name or "", function(text)
+        Level:save(text)
       end)
     else
       Level:save()

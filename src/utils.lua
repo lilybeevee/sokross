@@ -25,6 +25,10 @@ function string:split(sep)
   return t
 end
 
+function string:trim()
+  return (self:gsub("^%s*(.-)%s*$", "%1"))
+end
+
 function string:startsWith(start)
   return self:sub(1, start:len()) == start
 end
@@ -231,6 +235,14 @@ function Utils.removeDirectory(dir)
       end
     end
   end
+  love.filesystem.remove(dir)
+end
+
+function Utils.toFileName(str)
+  str = str:trim()
+  str = str:gsub("[%p%c]", "")
+  str = str:lower()
+  return str
 end
 
 return Utils
