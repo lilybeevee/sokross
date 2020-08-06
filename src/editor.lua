@@ -65,10 +65,15 @@ end
 
 function Editor:buildRoomTree()
   self.room_tree = {}
-  local current_room = Level.room
-  while current_room.exit do
-    table.insert(self.room_tree, 1, current_room.exit)
-    current_room = current_room.exit.parent
+  local current_room = Level.root
+  for _,key in ipairs(Level.start) do
+    for _,tile in ipairs(current_room.tiles_by_name["room"] or {}) do
+      if tile.key == key then
+        table.insert(self.room_tree, tile)
+        current_room = Level:getRoom(tile.room_key)
+        break
+      end
+    end
   end
 end
 
@@ -91,7 +96,7 @@ function Editor:keypressed(key)
     self.brush.dir = 1
   elseif key == "s" and self.brush and not love.keyboard.isDown("ctrl") then
     self.brush.dir = 2
-  elseif key == "a" and self.brush then
+  elseif key == "a" and self.brush and not love.keyboard.isDown("ctrl") then
     self.brush.dir = 3
   elseif key == "w" and self.brush then
     self.brush.dir = 4
@@ -116,6 +121,8 @@ function Editor:keypressed(key)
     elseif Level.room.palette == "pink" then
       Level.room.palette = "default"
     end
+  elseif key == "a" and love.keyboard.isDown("ctrl") then
+    Level.auto_rules = not Level.auto_rules
   elseif key == "q" then
     if love.keyboard.isDown("ctrl") then
       if not Level.room.paradox then
@@ -270,7 +277,7 @@ function Editor:update(dt)
   self.my = math.floor(self.my / TILE_SIZE)
 
   if painting and love.mouse.isDown(1) and self.brush then
-    self:placeTile(self.mx, self.my)
+    self:placeTile(self.mx, self.my, love.keyboard.isDown("shift"))
   elseif painting and love.mouse.isDown(2) and not love.keyboard.isDown("shift") then
     self:eraseTile(self.mx, self.my)
   end
@@ -432,6 +439,13 @@ function Editor:draw()
       love.graphics.setColor(1, 1, 1, 0.5)
     end
     love.graphics.draw(TILE_CANVAS, -TILE_CANVAS:getWidth()/2, -TILE_CANVAS:getHeight()/2)
+  end
+
+  if Level.auto_rules then
+    love.graphics.origin()
+    love.graphics.scale(1.5, 1.5)
+    love.graphics.setColor(1, 1, 1, 0.5)
+    love.graphics.draw(Assets.sprites["ui/auto_rules"], 4, 4)
   end
 end
 

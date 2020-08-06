@@ -14,7 +14,12 @@ function Level:new(name)
   self.new = true
   self.name = name
 
-  self:generateDefaults()
+  local room = Room(7, 7)
+  self:addRoom(room)
+
+  self.start_key = room.key
+  self.root = self:getRoom(room.key)
+  self.root_key = room.key
 
   self:traverse(self.start)
   self:spawnPlayer()
@@ -26,6 +31,7 @@ function Level:clear()
   self.new = false
   self.name = self.name or ""
   self.player = "flof"
+  self.auto_rules = true
   self.rooms = {}
   self.has_room = {}
   self.room_won = {}
@@ -155,6 +161,7 @@ function Level:save()
   local info = {
     name = self.name,
     player = self.player,
+    auto_rules = self.auto_rules,
     start = self.start,
     start_key = self.start_key,
     root = self.root.key,
@@ -189,6 +196,7 @@ function Level:load(name)
     self:clear()
     self.name = info.name or name
     self.player = info.player or "flof"
+    self.auto_rules = info.auto_rules or false
     self.start = info.start or {}
     self.room_key = info.room_key or 1
     self.tile_key = info.tile_key or 1
@@ -290,40 +298,6 @@ function Level:merge(name)
     local info = JSON.decode(love.filesystem.read(dir.."level.json"))
     return name.."/"..(info.start_key or info.root_key)
   end
-end
-
-function Level:generateDefaults()
-  local room1 = Room(12, 12, {entry = {0, 11}, static = true})
-  self:addRoom(room1)
-
-  local x, y = 0, 0
-  for _,rule in ipairs(DEFAULT_RULES) do
-    if x+#rule-1 >= room1.width then
-      x = 0
-      y = y + 1
-    end
-    for i,word in ipairs(rule) do
-      local sides = {true, false, true, false} -- center (mod)
-      if i == 1 then
-        sides = {true, false, false, false} -- left (noun)
-      elseif i == #rule then
-        sides = {false, false, true, false} -- right (prop)
-      end
-      room1:addTile(Tile("rule", x, y, {word = word, sides = sides}))
-      x = x + 1
-    end
-  end
-
-  local room2 = Room(7, 7)
-  self:addRoom(room2)
-
-  local room2_portal = Tile("room", 11, 11, {room_key = room2.key, static = true})
-  room1:addTile(room2_portal)
-
-  self.start = {room2_portal.key}
-  self.start_key = room2.key
-  self.root = room1
-  self.root_key = room1.key
 end
 
 function Level:getParadox(ref)

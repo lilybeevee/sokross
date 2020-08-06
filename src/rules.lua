@@ -15,24 +15,11 @@ function Rules:clear()
 end
 
 function Rules:addInherents()
-  local function addRule(target, effect)
-    table.insert(self.rules, {target = target, effect = effect})
+  if Level.auto_rules then
+    for _,rule in ipairs(DEFAULT_RULES) do
+      table.insert(self.rules, {target = rule[1], effect = rule[2]})
+    end
   end
-
-  --addRule("flof", "play")
-  --addRule("wall", "stop")
-  --addRule("box", "push")
-  --addRule("ladder", "exit")
-  --addRule("room", "push")
-  --addRule("rule", "push")
-
-  --addRule("rule", "word")
-  --addRule("key", "push")
-  --addRule("key", "open")
-  --addRule("door", "stop")
-  --addRule("door", "lock")
-  --addRule("ring", "tele")
-  --addRule("belt", "move")
 end
 
 function Rules:addInherited()
