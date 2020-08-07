@@ -2,8 +2,8 @@ local Movement = {}
 
 function Movement.turn(dir)
   local moves = {}
-  for _,playrule in ipairs(Level.room:getRules(nil, "play")) do
-    for _,tile in ipairs(Level.room:getTilesByName(playrule.target)) do
+  for _,playrule in ipairs(World.room:getRules(nil, "play")) do
+    for _,tile in ipairs(World.room:getTilesByName(playrule.target)) do
       table.insert(moves, {tile = tile, dir = dir})
     end
   end
@@ -191,7 +191,7 @@ function Movement.getNextTile(tile, dir)
   for _,tile in ipairs(tile.parent:getTilesAt(x, y)) do
     if tile.room_key then
       if not tile.room then
-        tile.room = Level:getRoom(tile.room_key)
+        tile.room = World:getRoom(tile.room_key)
         Undo:add("create_room", tile.room.id, tile.id)
         tile.room.exit = tile
         tile.room:parse()

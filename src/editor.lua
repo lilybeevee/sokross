@@ -5,13 +5,13 @@ function Editor:enter()
 
   self.font = love.graphics.newFont(46)
 
-  Level.static = true
-  if not Level.exists then
-    Level:new("new level")
+  World.static = true
+  if not World.exists then
+    World:new("new level")
   else
-    Level:reset()
+    World:reset()
   end
-  Level.room:updateVisuals()
+  World.room:updateVisuals()
 
   self.brush_canvas = love.graphics.newCanvas(TILE_SIZE*4, TILE_SIZE*4)
   self.brush = nil
@@ -24,10 +24,10 @@ end
 
 function Editor:shift(ox, oy)
   local new_tiles = {}
-  for x = 0, Level.room.width-1 do
-    for y = 0, Level.room.height-1 do
-      new_tiles[x+ox..","..y+oy] = Level.room.tiles[x..","..y]
-      for _,tile in ipairs(Level.room.tiles[x..","..y]) do
+  for x = 0, World.room.width-1 do
+    for y = 0, World.room.height-1 do
+      new_tiles[x+ox..","..y+oy] = World.room.tiles[x..","..y]
+      for _,tile in ipairs(World.room.tiles[x..","..y]) do
         tile.x = tile.x + ox
         tile.y = tile.y + oy
       end
@@ -37,9 +37,9 @@ function Editor:shift(ox, oy)
 end
 
 function Editor:resize(w, h, shiftx, shifty)
-  local old_w, old_h = Level.room.width, Level.room.height
-  Level.room.width = w
-  Level.room.height = h
+  local old_w, old_h = World.room.width, World.room.height
+  World.room.width = w
+  World.room.height = h
   if shiftx or shifty then
     self:shift(shiftx or 0, shifty or 0)
   end
@@ -49,28 +49,28 @@ end
 function Editor:validateTiles(width, height)
   -- loop through the whole map up to the specified width and height
   -- to remove oob tiles and create tables for all in-bounds positions
-  for x = 0, math.max(width or 0, Level.room.width)-1 do
-    for y = 0, math.max(height or 0, Level.room.height)-1 do
-      if not Level.room:inBounds(x, y) then
-        for _,tile in ipairs(Level.room:getTilesAt(x, y)) do
-          Level.room:removeTile(tile)
+  for x = 0, math.max(width or 0, World.room.width)-1 do
+    for y = 0, math.max(height or 0, World.room.height)-1 do
+      if not World.room:inBounds(x, y) then
+        for _,tile in ipairs(World.room:getTilesAt(x, y)) do
+          World.room:removeTile(tile)
         end
       end
     end
   end
-  if Level.room.entry and not Level.room:inBounds(Level.room:getEntry()) then
-    Level.room.entry = nil
+  if World.room.entry and not World.room:inBounds(World.room:getEntry()) then
+    World.room.entry = nil
   end
 end
 
 function Editor:buildRoomTree()
   self.room_tree = {}
-  local current_room = Level.root
-  for _,key in ipairs(Level.start) do
+  local current_room = World.root
+  for _,key in ipairs(World.start) do
     for _,tile in ipairs(current_room.tiles_by_name["room"] or {}) do
       if tile.key == key then
         table.insert(self.room_tree, tile)
-        current_room = Level:getRoom(tile.room_key)
+        current_room = World:getRoom(tile.room_key)
         break
       end
     end
@@ -78,15 +78,15 @@ function Editor:buildRoomTree()
 end
 
 function Editor:merge(name)
-  local merged_key = Level:merge(name)
+  local merged_key = World:merge(name)
   if merged_key then
-    self.brush = Tile("room", 0, 0, {room = Level:getRoom(merged_key), room_key = merged_key})
+    self.brush = Tile("room", 0, 0, {room = World:getRoom(merged_key), room_key = merged_key})
   end
-  Level:save()
-  local current_room = Level.room.key
-  Level:reset()
-  Level:changeRoom(current_room)
-  Level.room:updateVisuals()
+  World:save()
+  local current_room = World.room.key
+  World:reset()
+  World:changeRoom(current_room)
+  World.room:updateVisuals()
 end
 
 function Editor:keypressed(key)
@@ -101,67 +101,67 @@ function Editor:keypressed(key)
   elseif key == "w" and self.brush then
     self.brush.dir = 4
   elseif key == "right" and love.keyboard.isDown("ctrl") then
-    self:resize(Level.room.width+1, Level.room.height)
+    self:resize(World.room.width+1, World.room.height)
   elseif key == "left" and love.keyboard.isDown("ctrl") then
-    self:resize(Level.room.width-1, Level.room.height)
+    self:resize(World.room.width-1, World.room.height)
   elseif key == "down" and love.keyboard.isDown("ctrl") then
-    self:resize(Level.room.width, Level.room.height+1)
+    self:resize(World.room.width, World.room.height+1)
   elseif key == "up" and love.keyboard.isDown("ctrl") then
-    self:resize(Level.room.width, Level.room.height-1)
+    self:resize(World.room.width, World.room.height-1)
   elseif key == "=" then
-    self:resize(Level.room.width+1, Level.room.height+1)
+    self:resize(World.room.width+1, World.room.height+1)
   elseif key == "-" then
-    self:resize(Level.room.width-1, Level.room.height-1)
+    self:resize(World.room.width-1, World.room.height-1)
   elseif key == "c" then
     -- feature: good coding
-    if Level.room.palette == "default" then
-      Level.room.palette = "blue"
-    elseif Level.room.palette == "blue" then
-      Level.room.palette = "pink"
-    elseif Level.room.palette == "pink" then
-      Level.room.palette = "default"
+    if World.room.palette == "default" then
+      World.room.palette = "blue"
+    elseif World.room.palette == "blue" then
+      World.room.palette = "pink"
+    elseif World.room.palette == "pink" then
+      World.room.palette = "default"
     end
   elseif key == "a" and love.keyboard.isDown("ctrl") then
-    Level.auto_rules = not Level.auto_rules
+    World.auto_rules = not World.auto_rules
   elseif key == "q" then
     if love.keyboard.isDown("ctrl") then
-      if not Level.room.paradox then
-        Level.start = {}
+      if not World.room.paradox then
+        World.start = {}
         for _,tile in ipairs(self.room_tree) do
-          table.insert(Level.start, tile.key)
+          table.insert(World.start, tile.key)
         end
-        Level.start_key = Level.room.key
+        World.start_key = World.room.key
       end
     else
       self.placing_entrance = not self.placing_entrance
     end
   elseif key == "p" and love.keyboard.isDown("ctrl") then
-    if not Level.room.paradox_key then
-      if Level.room.paradox then
+    if not World.room.paradox_key then
+      if World.room.paradox then
         print("leaving paradox")
-        local non_paradox_room = Level:getRoom(Level.room.non_paradox_key)
-        Level:changeRoom(non_paradox_room)
-        Level.room:updateVisuals()
+        local non_paradox_room = World:getRoom(World.room.non_paradox_key)
+        World:changeRoom(non_paradox_room)
+        World.room:updateVisuals()
       else
         print("creating paradox")
-        local new_paradox_room = Room(Level.room.width, Level.room.height, {
+        local new_paradox_room = Room(World.room.width, World.room.height, {
           paradox = true,
           palette = "paradox",
-          non_paradox_room = Level.room,
-          non_paradox_key = Level.room.key,
-          exit = Level.room.exit}
+          non_paradox_room = World.room,
+          non_paradox_key = World.room.key,
+          exit = World.room.exit}
         )
-        Level:addRoom(new_paradox_room)
-        Level.room.paradox_room = new_paradox_room
-        Level.room.paradox_key = new_paradox_room.key
-        Level:changeRoom(new_paradox_room)
-        Level.room:updateVisuals()
+        World:addRoom(new_paradox_room)
+        World.room.paradox_room = new_paradox_room
+        World.room.paradox_key = new_paradox_room.key
+        World:changeRoom(new_paradox_room)
+        World.room:updateVisuals()
       end
     else
       print("going to paradox")
-      local paradox_room = Level:getRoom(Level.room.paradox_key)
-      Level:changeRoom(paradox_room)
-      Level.room:updateVisuals()
+      local paradox_room = World:getRoom(World.room.paradox_key)
+      World:changeRoom(paradox_room)
+      World.room:updateVisuals()
     end
   elseif key == "p" then
     self.brush.persist = not self.brush.persist
@@ -172,31 +172,31 @@ function Editor:keypressed(key)
   elseif key == "i" then
     self.brush.icy = not self.brush.icy
   elseif key == "s" and love.keyboard.isDown("ctrl") then
-    if Level.new or love.keyboard.isDown("shift") then
-      Gamestate.push(TextInput, "New level name:", not Level.new and Level.name or "", function(text)
-        Level:save(text)
+    if World.new or love.keyboard.isDown("shift") then
+      Gamestate.push(TextInput, "New level name:", not World.new and World.name or "", function(text)
+        World:save(text)
       end)
     else
-      Level:save()
+      World:save()
     end
   elseif key == "o" and love.keyboard.isDown("ctrl") then
     Gamestate.push(TextInput, "Enter file name to load:", "", function(text)
       print("Loading "..text)
-      Level:load(text)
-      Level.room:updateVisuals()
+      World:load(text)
+      World.room:updateVisuals()
       self:buildRoomTree()
     end)
   elseif key == "m" and love.keyboard.isDown("ctrl") then
-    Gamestate.push(TextInput, "Level name to merge:", "", function(text)
+    Gamestate.push(TextInput, "World name to merge:", "", function(text)
       self:merge(text)
     end)
   elseif key == "escape" then
     if #self.room_tree > 0 then
-      Level:changeRoom(table.remove(self.room_tree, #self.room_tree).parent)
+      World:changeRoom(table.remove(self.room_tree, #self.room_tree).parent)
     end
   elseif key == "return" then
-    if not Level.mounted then
-      Level:save()
+    if not World.mounted then
+      World:save()
     end
     Gamestate.switch(Game)
   elseif key == "`" then --debug
@@ -229,24 +229,24 @@ end
 function Editor:mousepressed(x, y, btn)
   if btn == 1 then
     if self.placing_entrance then
-      Level.room.entry = {self.mx, self.my}
+      World.room.entry = {self.mx, self.my}
       self.placing_entrance = false
       return
     else
       if not love.keyboard.isDown("shift") then
-        local tiles = Level.room:getTilesAt(self.mx, self.my)
+        local tiles = World.room:getTilesAt(self.mx, self.my)
         for _,tile in ipairs(tiles) do
           if tile.name == "room" then
             if not tile.room_key then
               local room = Room(7, 7, {
-                paradox = Level.room.paradox,
-                palette = Level.room.palette
+                paradox = World.room.paradox,
+                palette = World.room.palette
               })
-              tile.room_key = Level:addRoom(room)
+              tile.room_key = World:addRoom(room)
             end
             table.insert(self.room_tree, tile)
-            Level:changeRoom(tile.room_key)
-            Level.room:updateVisuals()
+            World:changeRoom(tile.room_key)
+            World.room:updateVisuals()
             return
           elseif tile.name == "tile" then
             self:selectTileActivator(tile)
@@ -256,7 +256,7 @@ function Editor:mousepressed(x, y, btn)
       end
     end
   elseif btn == 3 or (btn == 2 and love.keyboard.isDown("shift")) then
-    local tiles = Level.room:getTilesAt(self.mx, self.my)
+    local tiles = World.room:getTilesAt(self.mx, self.my)
     if #tiles > 0 then
       self.brush = tiles[1]:copy()
       return
@@ -286,10 +286,10 @@ function Editor:placeTile(x,y,stack)
   if not stack then
     self:eraseTile(x,y)
   end
-  if Level.room:inBounds(x,y) then
+  if World.room:inBounds(x,y) then
     local success = true
     if stack then
-      for _,tile in ipairs(Level.room:getTilesAt(x,y)) do
+      for _,tile in ipairs(World.room:getTilesAt(x,y)) do
         if tile.name == self.brush.name and tile.word == self.brush.word then
           success = false
           break
@@ -300,26 +300,26 @@ function Editor:placeTile(x,y,stack)
       local new_tile = self.brush:copy()
       new_tile.x = x
       new_tile.y = y
-      Level.room:addTile(new_tile)
-      Level.room:updateVisuals()
+      World.room:addTile(new_tile)
+      World.room:updateVisuals()
     end
   end
 end
 
 function Editor:eraseTile(x,y)
-  if Level.room:inBounds(x,y) then
-    for _,tile in ipairs(Level.room:getTilesAt(x,y)) do
-      Level.room:removeTile(tile)
+  if World.room:inBounds(x,y) then
+    for _,tile in ipairs(World.room:getTilesAt(x,y)) do
+      World.room:removeTile(tile)
     end
-    Level.room:updateVisuals()
+    World.room:updateVisuals()
   end
 end
 
 function Editor:isStart()
-  if Level.room.paradox or #Level.start ~= #self.room_tree then
+  if World.room.paradox or #World.start ~= #self.room_tree then
     return false
   end
-  for i,key in ipairs(Level.start) do
+  for i,key in ipairs(World.start) do
     if key ~= self.room_tree[i].key then
       return false
     end
@@ -330,9 +330,9 @@ end
 function Editor:selectTileActivator(maintile)
   local tiles = {}
 
-  table.insert(tiles, Tile("tile", 0, 0, {parent = Level.room}))
+  table.insert(tiles, Tile("tile", 0, 0, {parent = World.room}))
   for _,activator in ipairs(TILE_ACTIVATORS) do
-    table.insert(tiles, Tile("tile", 0, 0, {activator = activator, parent = Level.room}))
+    table.insert(tiles, Tile("tile", 0, 0, {activator = activator, parent = World.room}))
   end
 
   Gamestate.push(Selector, tiles, function(tile)
@@ -350,7 +350,7 @@ function Editor:openTileSelector()
     elseif word then
       added_word[word] = true
     end
-    local tile = Tile(name, 0, 0, {word = word, parent = Level.room})
+    local tile = Tile(name, 0, 0, {word = word, parent = World.room})
     table.insert(tiles, tile)
   end
 
@@ -382,7 +382,7 @@ function Editor:getTransform()
   local transform = love.math.newTransform()
   transform:translate(love.graphics.getWidth()/2, love.graphics.getHeight()/2)
   transform:scale(2, 2)
-  transform:translate(-Level.room.width*TILE_SIZE/2, -Level.room.height*TILE_SIZE/2)
+  transform:translate(-World.room.width*TILE_SIZE/2, -World.room.height*TILE_SIZE/2)
   return transform
 end
 
@@ -392,17 +392,17 @@ function Editor:draw()
   local text = "What is sokoma? Like what is that"
   love.graphics.print(text, love.graphics.getWidth()/2 - self.font:getWidth(text)/2, love.graphics.getHeight()/2 - self.font:getHeight()/2)
   
-  local palette = Assets.palettes[Level.room.palette]
+  local palette = Assets.palettes[World.room.palette]
   palette:setColor(8, 0)
   love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
 
   love.graphics.applyTransform(self:getTransform())
 
-  Level.room:draw()
+  World.room:draw()
 
   local starsprite = Assets.sprites["tiles/star"]
   love.graphics.push()
-  love.graphics.translate(Vector.mul(TILE_SIZE, Level.room:getEntry()))
+  love.graphics.translate(Vector.mul(TILE_SIZE, World.room:getEntry()))
   local r, g, b
   if self:isStart() then
     r,g,b = palette:getColor(7, 3)  
@@ -440,7 +440,7 @@ function Editor:draw()
     love.graphics.draw(TILE_CANVAS, -TILE_CANVAS:getWidth()/2, -TILE_CANVAS:getHeight()/2)
   end
 
-  if Level.auto_rules then
+  if World.auto_rules then
     love.graphics.origin()
     love.graphics.scale(1.5, 1.5)
     love.graphics.setColor(1, 1, 1, 0.5)

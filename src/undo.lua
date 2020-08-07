@@ -33,7 +33,7 @@ function Undo:back(count)
       self.index = self.index - 1
     end
   end
-  Level.room:updateVisuals()
+  World.room:updateVisuals()
   Game:playSounds()
 end
 
@@ -45,8 +45,8 @@ function Undo:doUndo(undo)
   if action == "move" then
     local tileid, x, y, dir, roomid = undo[2], undo[3], undo[4], undo[5], undo[6]
 
-    local tile = Level.tiles_by_id[tileid]
-    local room = roomid and Level.rooms_by_id[roomid] or nil
+    local tile = World.tiles_by_id[tileid]
+    local room = roomid and World.rooms_by_id[roomid] or nil
 
     if tile.word then
       Game.parse_room[tile.parent] = true
@@ -60,7 +60,7 @@ function Undo:doUndo(undo)
     local tiledata, roomid = undo[2], undo[3]
 
     local tile = Tile.load(tiledata)
-    local room = Level.rooms_by_id[roomid]
+    local room = World.rooms_by_id[roomid]
 
     room:addTile(tile, true)
 
@@ -70,7 +70,7 @@ function Undo:doUndo(undo)
   elseif action == "add" then
     local tileid = undo[2]
 
-    local tile = Level.tiles_by_id[tileid]
+    local tile = World.tiles_by_id[tileid]
     local room = tile.parent
 
     room:removeTile(tile, true)
@@ -81,22 +81,22 @@ function Undo:doUndo(undo)
   elseif action == "create_room" then
     local roomid, exitid = undo[2], undo[3]
 
-    local room = Level.rooms_by_id[roomid]
-    local exit = Level.tiles_by_id[exitid]
+    local room = World.rooms_by_id[roomid]
+    local exit = World.tiles_by_id[exitid]
 
     room:remove()
     exit.room = nil
   elseif action == "create_paradox" then
     local roomid, baseid = undo[2], undo[3]
 
-    local room = Level.rooms_by_id[roomid]
-    local base = Level.rooms_by_id[baseid]
+    local room = World.rooms_by_id[roomid]
+    local base = World.rooms_by_id[baseid]
 
     room:remove()
     base.paradox_room = nil
   elseif action == "update_persist" then
     local key, data = undo[2], undo[3]
-    Level.persists[key] = data
+    World.persists[key] = data
   end
 end
 

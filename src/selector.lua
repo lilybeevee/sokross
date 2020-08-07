@@ -53,7 +53,7 @@ function Selector:draw()
   love.graphics.setColor(0, 0, 0, 0.75)
   love.graphics.rectangle("fill", -TILE_SIZE/2, -TILE_SIZE/2, self.grid*self.width + TILE_SIZE, self.grid*self.height + TILE_SIZE)
 
-  local palette = Assets.palettes[Level.room.palette]
+  local palette = Assets.palettes[World.room.palette]
 
   for i,tile in ipairs(self.tiles) do
     local x, y = ((i-1) % self.width) * self.grid, math.floor((i-1) / self.width) * self.grid

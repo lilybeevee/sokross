@@ -5,11 +5,11 @@ function Tile:init(name, x, y, o)
 
   if o.id then
     self.id = o.id
-    Level.tiles_by_id[self.id] = self
-  elseif not Level.static then
-    self.id = Level.tile_id
-    Level.tile_id = Level.tile_id + 1
-    Level.tiles_by_id[self.id] = self
+    World.tiles_by_id[self.id] = self
+  elseif not World.static then
+    self.id = World.tile_id
+    World.tile_id = World.tile_id + 1
+    World.tiles_by_id[self.id] = self
   else
     self.id = 0
   end
@@ -17,8 +17,8 @@ function Tile:init(name, x, y, o)
   if o.key then
     self.key = o.key
   else
-    self.key = tostring(Level.tile_key + 1)
-    Level.tile_key = Level.tile_key + 1
+    self.key = tostring(World.tile_key + 1)
+    World.tile_key = World.tile_key + 1
   end
 
   self.parent = o.parent
@@ -148,18 +148,18 @@ function Tile:update()
 end
 
 function Tile:remove()
-  if not Level.static then
-    Level.tiles_by_id[self.id] = nil
+  if not World.static then
+    World.tiles_by_id[self.id] = nil
   end
-  Utils.removeFromTable(Level.tiles_by_key[self.key], self)
+  Utils.removeFromTable(World.tiles_by_key[self.key], self)
 end
 
 function Tile:add()
-  if not Level.static then
-    Level.tiles_by_id[self.id] = self
+  if not World.static then
+    World.tiles_by_id[self.id] = self
   end
-  Level.tiles_by_key[self.key] = Level.tiles_by_key[self.key] or {}
-  table.insert(Level.tiles_by_key[self.key], self)
+  World.tiles_by_key[self.key] = World.tiles_by_key[self.key] or {}
+  table.insert(World.tiles_by_key[self.key], self)
 end
 
 function Tile:hasRule(effect)
@@ -184,12 +184,12 @@ function Tile:moveTo(x, y, room, dir, ignore_persist)
     local last_parent_parent = self.parent:getParent()
     if self.persist and not ignore_persist then
       Undo:add("remove", self:save(true), self.parent.id)
-      Undo:add("update_persist", self.key, Level.persists[self.key])
+      Undo:add("update_persist", self.key, World.persists[self.key])
       self.parent:removeTile(self, ignore_persist)
       self.x, self.y = x, y
-      Level.persists[self.key] = self:save()
+      World.persists[self.key] = self:save()
       if not (last_parent:getParent() ~= last_parent_parent and last_parent.key == room.key) then -- only fails for a persistent room exiting itself
-        local tile = Tile.load(Level.persists[self.key])
+        local tile = Tile.load(World.persists[self.key])
         Undo:add("add", tile.id)
         room:addTile(tile, ignore_persist)
       end
@@ -216,11 +216,11 @@ function Tile:moveTo(x, y, room, dir, ignore_persist)
 end
 
 function Tile:updatePersistence()
-  if Level.persists[self.key] and not Level.static then
+  if World.persists[self.key] and not World.static then
     if self.persist then
-      Undo:add("update_persist", self.key, Level.persists[self.key])
-      Level.persists[self.key] = self:save()
-      for _,tile in ipairs(Level.tiles_by_key[self.key] or {}) do
+      Undo:add("update_persist", self.key, World.persists[self.key])
+      World.persists[self.key] = self:save()
+      for _,tile in ipairs(World.tiles_by_key[self.key] or {}) do
         if tile ~= self then
           tile:moveTo(self.x, self.y, nil, self.dir, true)
           tile.locked = self.locked
@@ -230,10 +230,10 @@ function Tile:updatePersistence()
         end
       end
     else
-      Undo:add("update_persist", self.key, Level.persists[self.key])
-      Level.persists[self.key] = nil
+      Undo:add("update_persist", self.key, World.persists[self.key])
+      World.persists[self.key] = nil
       local to_remove = {}
-      for _,tile in ipairs(Level.tiles_by_key[self.key] or {}) do
+      for _,tile in ipairs(World.tiles_by_key[self.key] or {}) do
         if tile ~= self then
           table.insert(to_remove, tile)
         end
@@ -301,7 +301,7 @@ function Tile:getActivated()
       end
     end
   elseif self.name == "room" then
-    return self.room_key and Level.room_won[self.room_key]
+    return self.room_key and World.room_won[self.room_key]
   end
   return false
 end
@@ -454,7 +454,7 @@ function Tile:copy()
     icy = self.icy,
   })
   if tile.room_key then
-    tile.room = Level:getRoom(tile.room_key)
+    tile.room = World:getRoom(tile.room_key)
   end
   return tile
 end
@@ -494,7 +494,7 @@ end
 function Tile.load(data)
   local room
   if data.room_id then
-    room = Level.rooms_by_id[data.room_id]
+    room = World.rooms_by_id[data.room_id]
   end
   return Tile(data.name, data.x, data.y, {
     id = data.id,

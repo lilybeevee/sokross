@@ -5,13 +5,13 @@ function Room:init(width, height, o)
 
   if o.id then
     self.id = o.id
-  elseif not Level.static then
-    self.id = Level.room_id
-    Level.room_id = Level.room_id + 1
-    Level.rooms_by_id[self.id] = self
+  elseif not World.static then
+    self.id = World.room_id
+    World.room_id = World.room_id + 1
+    World.rooms_by_id[self.id] = self
     if not o.static then
-      Level.rooms_by_key[o.key] = Level.rooms_by_key[o.key] or {}
-      table.insert(Level.rooms_by_key[o.key], self)
+      World.rooms_by_key[o.key] = World.rooms_by_key[o.key] or {}
+      table.insert(World.rooms_by_key[o.key], self)
     end
   else
     self.id = 0
@@ -52,10 +52,10 @@ function Room:init(width, height, o)
 end
 
 function Room:remove()
-  if not Level.static then
-    Level.rooms_by_id[self.id] = nil
+  if not World.static then
+    World.rooms_by_id[self.id] = nil
     if not self.static then
-      Utils.removeFromTable(Level.rooms_by_key[self.key], self)
+      Utils.removeFromTable(World.rooms_by_key[self.key], self)
     end
   end
   for _,tile in ipairs(self.tiles) do
@@ -87,7 +87,7 @@ function Room:parseIfNecessary()
 end
 
 function Room:enter(tile, dir)
-  Level:changeRoom(self)
+  World:changeRoom(self)
   if tile.parent and tile.parent:getLayer() < self:getLayer() then
     if tile then
       self.exit_as = tile:save()
@@ -126,17 +126,17 @@ function Room:addTile(tile, ignore_persist)
 
   table.insert(self.tiles_by_layer[tile.layer], tile)
 
-  if tile.persist and not Level.static then
-    if not Utils.contains(Level.persists_in_room[self.key], tile.key) then
-      if not Level.persists[tile.key] then
-        Level.persists[tile.key] = tile:save()
+  if tile.persist and not World.static then
+    if not Utils.contains(World.persists_in_room[self.key], tile.key) then
+      if not World.persists[tile.key] then
+        World.persists[tile.key] = tile:save()
       end
-      table.insert(Level.persists_in_room[self.key], tile.key)
+      table.insert(World.persists_in_room[self.key], tile.key)
 
       if not ignore_persist then
-        for _,room in ipairs(Level.rooms_by_key[self.key] or {}) do
+        for _,room in ipairs(World.rooms_by_key[self.key] or {}) do
           if room ~= self then
-            local tile = Tile.load(Level.persists[tile.key])
+            local tile = Tile.load(World.persists[tile.key])
             Undo:add("add", tile.id)
             room:addTile(tile, true)
             Game.parse_room[room] = true
@@ -155,12 +155,12 @@ function Room:removeTile(tile, ignore_persist)
   Utils.removeFromTable(self.tiles_by_pos[tile.x..","..tile.y], tile)
   Utils.removeFromTable(self.tiles_by_name[tile.name], tile)
   Utils.removeFromTable(self.tiles_by_layer[tile.layer], tile)
-  if tile.persist and not Level.static then
-    Utils.removeFromTable(Level.persists_in_room[self.key], tile.key)
+  if tile.persist and not World.static then
+    Utils.removeFromTable(World.persists_in_room[self.key], tile.key)
 
     if not ignore_persist then
       local to_remove = {}
-      for _,linked in ipairs(Level.tiles_by_key[tile.key] or {}) do
+      for _,linked in ipairs(World.tiles_by_key[tile.key] or {}) do
         if linked ~= tile then
           table.insert(to_remove, linked)
         end
@@ -316,7 +316,7 @@ function Room:getParadoxEntry(tile)
     local x, y = getCoordsTo(self.paradox_room)
     return x, y, self.paradox_room
   elseif self.paradox_key then
-    local room = Level:getRoom(self.paradox_key)
+    local room = World:getRoom(self.paradox_key)
     self.paradox_room = room
     room.exit = self.exit
     Undo:add("create_paradox", room.id, self.id)
@@ -325,26 +325,26 @@ function Room:getParadoxEntry(tile)
     return x, y, room
   else
     if self.paradox then
-      local room = Level:getVoid()
+      local room = World:getVoid()
       room.exit = self.exit
       room.rules.inherited_rules = self.rules.inherited_rules
       local x, y = getCoordsTo(room)
       return x, y, room
     elseif self.void then
       if tile:hasRule("play") then
-        local room = Level:getHeaven()
+        local room = World:getHeaven()
         room.exit = self.exit
         room.rules.inherited_rules = self.rules.inherited_rules
         return 2, 2, room
       else
-        local room = Level:getVoid()
+        local room = World:getVoid()
         room.exit = self.exit
         room.rules.inherited_rules = self.rules.inherited_rules
         local x, y = getCoordsTo(room)
         return x, y, room
       end
     else
-      local room = Level:getParadox(self)
+      local room = World:getParadox(self)
       self.paradox_room = room
       self.paradox_key = room.key
       room.exit = self.exit
@@ -365,10 +365,10 @@ function Room:win()
     end
   end
   if has_exit and self:getParent() then
-    Level:changeRoom(self:getParent())
-    Level.room:win()
+    World:changeRoom(self:getParent())
+    World.room:win()
   else
-    Level.room_won[self.key] = true
+    World.room_won[self.key] = true
     if self.exit then
       local dx, dy = Dir.toPos(self.exit_dir)
       local exiter
@@ -376,11 +376,11 @@ function Room:win()
         exiter = Tile.load(self.exit_as)
         exiter.dir = self.exit_dir
       else
-        exiter = Tile(Level.player, self.exit.x+dx, self.exit.y+dy, {dir = self.exit_dir})
+        exiter = Tile(World.player, self.exit.x+dx, self.exit.y+dy, {dir = self.exit_dir})
       end
       self:getParent():addTile(exiter)
-      Level:changeRoom(self:getParent())
-      self.exit.room = Level:getRoom(self.exit.room_key)
+      World:changeRoom(self:getParent())
+      self.exit.room = World:getRoom(self.exit.room_key)
       self.exit.room.exit = self.exit
     else -- ideally this can't happen unless you're just playtesting from editor
       Gamestate.switch(Editor)
@@ -426,15 +426,15 @@ function Room.load(data)
 
   local already_added = {}
   for _,tiledata in ipairs(data.tiles) do
-    if Level.static or not tiledata.persist or not Level.persists[tiledata.key] then
+    if World.static or not tiledata.persist or not World.persists[tiledata.key] then
       already_added[tiledata.key] = true
       room:addTile(Tile.load(tiledata))
     end
   end
 
-  for _,persisted in ipairs(Level.persists_in_room[room.key] or {}) do
+  for _,persisted in ipairs(World.persists_in_room[room.key] or {}) do
     if not already_added[persisted] then
-      room:addTile(Tile.load(Level.persists[persisted]), true)
+      room:addTile(Tile.load(World.persists[persisted]), true)
     end
   end
 

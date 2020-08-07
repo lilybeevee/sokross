@@ -10,12 +10,12 @@ function Game:enter()
   self.turn = 0
   self.parse_room = {}
 
-  Level.static = false
-  Level:reset()
+  World.static = false
+  World:reset()
   
-  Level.room:parse()
-  Level.room:updateLines()
-  Level.room:updateVisuals()
+  World.room:parse()
+  World.room:updateLines()
+  World.room:updateVisuals()
   self.sound = {}
 
   self.move_key_buffer = {}
@@ -25,7 +25,7 @@ function Game:enter()
   self.undo_timer_mult = 1
   self.updated_tiles = {}
 
-  --print(dump(Level.room.rules.rules))
+  --print(dump(World.room.rules.rules))
 end
 
 function Game:keypressed(key)
@@ -38,14 +38,14 @@ function Game:keypressed(key)
   if key == "z" then
     self.undoing = true
   elseif key == "r" then
-    Level:reset()
-    Level.room:updateLines()
-    Level.room:updateVisuals()
+    World:reset()
+    World.room:updateLines()
+    World.room:updateVisuals()
   elseif key == "return" then
     Gamestate.switch(Editor)
   elseif key == "`" then -- debug
     self:doTurn()
-    for _,tile in ipairs(Level.room:getTilesByName("flof")) do
+    for _,tile in ipairs(World.room:getTilesByName("flof")) do
       tile:goToParadox()
     end
   end
@@ -96,10 +96,10 @@ function Game:doTurn(dir)
   Movement.turn(dir)
   self:reparse()
   self:doTransitions()
-  Level.room:updateTiles()
+  World.room:updateTiles()
   self:checkWin()
-  Level.room:updateLines()
-  Level.room:updateVisuals()
+  World.room:updateLines()
+  World.room:updateVisuals()
   self:playSounds()
   Undo.enabled = false
 end
@@ -204,7 +204,7 @@ function Game:doTransitions()
               moved_persist[tile] = moved_persist[tile] or {}
               if not moved_tile[tile][other] and (not other.persist or not moved_persist[tile][other.key]) then
                 if not tile.room then
-                  tile.room = Level:getRoom(tile.room_key)
+                  tile.room = World:getRoom(tile.room_key)
                   tile.room.exit = tile
                   Undo:add("create_room", tile.room.id, tile.id)
                   tile.room:parse()
@@ -231,28 +231,28 @@ function Game:doTransitions()
 end
 
 function Game:checkWin()
-  if #Level.room:getTilesByName("tile") == 0 then return end
-  for _,tile in ipairs(Level.room:getTilesByName("tile")) do
+  if #World.room:getTilesByName("tile") == 0 then return end
+  for _,tile in ipairs(World.room:getTilesByName("tile")) do
     if not tile:getActivated() then return end
   end
-  Level.room:win()
+  World.room:win()
 end
 
 function Game:getTransform()
   local transform = love.math.newTransform()
   transform:translate(love.graphics.getWidth()/2, love.graphics.getHeight()/2)
   transform:scale(2, 2)
-  transform:translate(-Level.room.width*TILE_SIZE/2, -Level.room.height*TILE_SIZE/2)
+  transform:translate(-World.room.width*TILE_SIZE/2, -World.room.height*TILE_SIZE/2)
   return transform
 end
 
 function Game:draw()
-  Assets.palettes[Level.room.palette]:setColor(8, 0)
+  Assets.palettes[World.room.palette]:setColor(8, 0)
   love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
 
   love.graphics.applyTransform(self:getTransform())
 
-  Level.room:draw()
+  World.room:draw()
 end
 
 return Game
