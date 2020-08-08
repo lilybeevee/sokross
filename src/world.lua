@@ -12,7 +12,6 @@ function World:new(name)
   self:clear()
 
   self.new = true
-  self.name = name
 
   local room = Room(7, 7)
   self:addRoom(room)
@@ -124,21 +123,15 @@ function World:getRoom(key)
   end
 end
 
-function World:addRoom(room)
+function World:addRoom(room, level)
+  level = level or self.level
   if not room.key then
-    local prefix = room.paradox and "paradox" or "room"
-    room.key = prefix..self:newKey()
+    room.key = level:newKey()
   end
   self.rooms[room.key] = room
   self.has_room[room.key] = true
   self.persists_in_room[room.key] = {}
   return room.key
-end
-
-function World:newKey(prefix)
-  local key = string.format("%04d", self.room_key)
-  self.room_key = self.room_key + 1
-  return key
 end
 
 function World:save(name)

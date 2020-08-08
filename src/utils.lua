@@ -247,8 +247,8 @@ end
 
 function Utils.createUUID()
   local uuid = ""
-  local chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-  for i = 1, 12 do
+  local chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz~!@#$%^&*()-_=+/?,<.>"
+  for i = 1, 8 do
       local l = love.math.random(1, #chars)
       uuid = uuid .. string.sub(chars, l, l)
   end
