@@ -113,14 +113,14 @@ function Editor:keypressed(key)
   elseif key == "-" then
     self:resize(World.room.width-1, World.room.height-1)
   elseif key == "c" then
-    -- feature: good coding
-    if World.room.palette == "default" then
-      World.room.palette = "blue"
-    elseif World.room.palette == "blue" then
-      World.room.palette = "pink"
-    elseif World.room.palette == "pink" then
-      World.room.palette = "default"
-    end
+    Gamestate.push(TextInput, "Enter palette name:", "", function(text)
+      if Assets.palettes[text] then
+        World.room.palette = text
+      else
+        print("Palette "..text.." doesn't exist!")
+        World.room.palette = "default"
+      end
+    end)
   elseif key == "a" and love.keyboard.isDown("ctrl") then
     World.main.auto_rules = not World.main.auto_rules
   elseif key == "q" then
