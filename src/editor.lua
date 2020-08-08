@@ -92,48 +92,33 @@ end
 function Editor:keypressed(key)
   if key == "tab" then
     self:openTileSelector()
-  elseif key == "d" and self.brush then
-    self.brush.dir = 1
-  elseif key == "s" and self.brush and not love.keyboard.isDown("ctrl") then
-    self.brush.dir = 2
-  elseif key == "a" and self.brush and not love.keyboard.isDown("ctrl") then
-    self.brush.dir = 3
-  elseif key == "w" and self.brush then
-    self.brush.dir = 4
-  elseif key == "right" and love.keyboard.isDown("ctrl") then
-    self:resize(World.room.width+1, World.room.height)
-  elseif key == "left" and love.keyboard.isDown("ctrl") then
-    self:resize(World.room.width-1, World.room.height)
-  elseif key == "down" and love.keyboard.isDown("ctrl") then
-    self:resize(World.room.width, World.room.height+1)
-  elseif key == "up" and love.keyboard.isDown("ctrl") then
-    self:resize(World.room.width, World.room.height-1)
-  elseif key == "=" then
-    self:resize(World.room.width+1, World.room.height+1)
-  elseif key == "-" then
-    self:resize(World.room.width-1, World.room.height-1)
-  elseif key == "c" then
-    Gamestate.push(TextInput, "Enter palette name:", "", function(text)
-      if Assets.palettes[text] then
-        World.room.palette = text
-      else
-        print("Palette "..text.." doesn't exist!")
-        World.room.palette = "default"
+  elseif key == "s" and love.keyboard.isDown("ctrl") then
+    if World.new or love.keyboard.isDown("shift") then
+      Gamestate.push(TextInput, "New level name:", not World.new and World.main.name or "", function(text)
+        if text ~= "" then
+          World.main:rename(text)
+        end
+      end)
+    else
+      World:save()
+    end
+  elseif key == "o" and love.keyboard.isDown("ctrl") then
+    Gamestate.push(TextInput, "Enter file name to load:", "", function(text)
+      print("Loading "..text)
+      World:load(text)
+      World.room:updateVisuals()
+      self:buildRoomTree()
+    end)
+  elseif key == "r" and love.keyboard.isDown("ctrl") then
+    Gamestate.push(TextInput, "New sublevel name:", World.level.name, function(text)
+      if text ~= "" then
+        World.level:rename(text)
       end
     end)
-  elseif key == "a" and love.keyboard.isDown("ctrl") then
-    World.main.auto_rules = not World.main.auto_rules
-  elseif key == "q" then
-    if love.keyboard.isDown("ctrl") then
-      if not World.room.paradox then
-        World.main.start = {}
-        for _,tile in ipairs(self.room_tree) do
-          table.insert(World.main.start, tile.key)
-        end
-      end
-    else
-      self.placing_entrance = not self.placing_entrance
-    end
+  elseif key == "m" and love.keyboard.isDown("ctrl") then
+    Gamestate.push(TextInput, "Merge level into current sublevel:", "", function(text)
+      self:merge(text)
+    end)
   elseif key == "p" and love.keyboard.isDown("ctrl") then
     if not World.room.paradox_key then
       if World.room.paradox then
@@ -162,6 +147,48 @@ function Editor:keypressed(key)
       World:changeRoom(paradox_room)
       World.room:updateVisuals()
     end
+  elseif key == "a" and love.keyboard.isDown("ctrl") then
+    World.main.auto_rules = not World.main.auto_rules
+  elseif key == "d" and self.brush then
+    self.brush.dir = 1
+  elseif key == "s" and self.brush then
+    self.brush.dir = 2
+  elseif key == "a" and self.brush then
+    self.brush.dir = 3
+  elseif key == "w" and self.brush then
+    self.brush.dir = 4
+  elseif key == "right" and love.keyboard.isDown("ctrl") then
+    self:resize(World.room.width+1, World.room.height)
+  elseif key == "left" and love.keyboard.isDown("ctrl") then
+    self:resize(World.room.width-1, World.room.height)
+  elseif key == "down" and love.keyboard.isDown("ctrl") then
+    self:resize(World.room.width, World.room.height+1)
+  elseif key == "up" and love.keyboard.isDown("ctrl") then
+    self:resize(World.room.width, World.room.height-1)
+  elseif key == "=" then
+    self:resize(World.room.width+1, World.room.height+1)
+  elseif key == "-" then
+    self:resize(World.room.width-1, World.room.height-1)
+  elseif key == "c" then
+    Gamestate.push(TextInput, "Enter palette name:", "", function(text)
+      if Assets.palettes[text] then
+        World.room.palette = text
+      else
+        print("Palette "..text.." doesn't exist!")
+        World.room.palette = "default"
+      end
+    end)
+  elseif key == "q" then
+    if love.keyboard.isDown("ctrl") then
+      if not World.room.paradox then
+        World.main.start = {}
+        for _,tile in ipairs(self.room_tree) do
+          table.insert(World.main.start, tile.key)
+        end
+      end
+    else
+      self.placing_entrance = not self.placing_entrance
+    end
   elseif key == "p" then
     self.brush.persist = not self.brush.persist
   elseif key == "l" then
@@ -170,33 +197,6 @@ function Editor:keypressed(key)
     end
   elseif key == "i" then
     self.brush.icy = not self.brush.icy
-  elseif key == "s" and love.keyboard.isDown("ctrl") then
-    if World.new or love.keyboard.isDown("shift") then
-      Gamestate.push(TextInput, "New level name:", not World.new and World.main.name or "", function(text)
-        if text ~= "" then
-          World.main:rename(text)
-        end
-      end)
-    else
-      World:save()
-    end
-  elseif key == "o" and love.keyboard.isDown("ctrl") then
-    Gamestate.push(TextInput, "Enter file name to load:", "", function(text)
-      print("Loading "..text)
-      World:load(text)
-      World.room:updateVisuals()
-      self:buildRoomTree()
-    end)
-  elseif key == "r" and love.keyboard.isDown("ctrl") then
-    Gamestate.push(TextInput, "New sublevel name:", World.level.name, function(text)
-      if text ~= "" then
-        World.level:rename(text)
-      end
-    end)
-  elseif key == "m" and love.keyboard.isDown("ctrl") then
-    Gamestate.push(TextInput, "Merge level into current sublevel:", "", function(text)
-      self:merge(text)
-    end)
   elseif key == "escape" then
     if #self.room_tree > 0 then
       World:changeRoom(table.remove(self.room_tree, #self.room_tree).parent)
