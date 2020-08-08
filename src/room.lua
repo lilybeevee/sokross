@@ -180,7 +180,7 @@ function Room:removeTile(tile, ignore_persist)
       end
     end
   end
-  tile:remove()
+  tile:remove(ignore_persist)
   tile.parent = nil
 end
 

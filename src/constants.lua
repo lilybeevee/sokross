@@ -36,6 +36,8 @@ DEFAULT_RULES = {
   {"belt", "flat"},
   {"water", "sink"},
   {"water", "flat"},
+  {"flag", "save"},
+  {"flag", "flat"},
   {"room", "push"},
   {"rule", "push"},
   {"line", "flat"},

@@ -29,6 +29,8 @@ function Tile:init(name, x, y, o)
   self.locked = o.locked or false
   self.persist = o.persist or false
   self.icy = o.icy or false
+  self.savepoint = nil
+  self.saved_tiles = {}
   
   if o.word then
     self.wordname = o.word
@@ -132,6 +134,9 @@ function Tile:update()
         Game.sound["sink"] = true
         table.insert(to_destroy, self)
         table.insert(to_destroy, other)
+      elseif other:hasRule("save") then
+        self.savepoint = other.id
+        table.insert(other.saved_tiles, self.id)
       end
     end
   end
@@ -141,8 +146,19 @@ function Tile:update()
   return to_destroy, movers
 end
 
-function Tile:remove()
+function Tile:remove(ignore_save)
+  for _,tileid in ipairs(self.saved_tiles) do
+    if World.tiles_by_id[tileid] then
+      World.tiles_by_id[tileid].savepoint = nil
+    end
+  end
   if not World.static then
+    if self.savepoint and not ignore_save then
+      local save = World.tiles_by_id[self.savepoint]
+      local new_self = Tile(self.name, save.x, save.y, {dir = self.dir, word = self.word.name, icy = self.icy})
+      save.parent:addTile(new_self)
+      Undo:add("add", new_self.id)
+    end
     World.tiles_by_id[self.id] = nil
   end
   Utils.removeFromTable(World.tiles_by_key[self.key], self)

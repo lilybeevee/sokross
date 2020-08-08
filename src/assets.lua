@@ -163,6 +163,13 @@ function Assets.addTiles()
       property = "sink",
     },
     {
+      name = "flag",
+      sprites = {"flag"},
+      colors = {{2, 1}},
+      layer = 2,
+      property = "save",
+    },
+    {
       name = "room",
       sprites = {"rect"},
       colors = {{4, 2}},
@@ -266,6 +273,16 @@ function Assets.addWords()
       type = "prop",
       color = 7,
       dark = true,
+    },
+    {
+      name = "flag",
+      type = "noun",
+      color = 2,
+    },
+    {
+      name = "save",
+      type = "prop",
+      color = 5,
     },
     {
       name = "rule",
