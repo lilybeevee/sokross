@@ -66,6 +66,23 @@ function dump(o)
   end
 end
 
+function Utils.encodeNum(n)
+  n = math.floor(n)
+  local digits = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+  local t = {}
+  local sign = ""
+  if n < 0 then
+      sign = "-"
+  n = -n
+  end
+  repeat
+      local d = (n % #digits) + 1
+      n = math.floor(n / #digits)
+      table.insert(t, 1, digits:sub(d,d))
+  until n == 0
+  return sign .. table.concat(t,"")
+end
+
 function Utils.isEmpty(v)
   if type(v) == "nil" then
     return true
@@ -234,8 +251,33 @@ function Utils.removeDirectory(dir)
         Utils.removeDirectory(dir.."/"..file)
       end
     end
+    love.filesystem.remove(dir)
+    return true
   end
-  love.filesystem.remove(dir)
+  return false
+end
+
+function Utils.copyDirectory(dir, target, force)
+  if love.filesystem.getInfo(dir, "directory") and (force or not love.filesystem.getInfo(target, "directory")) then
+    for _,file in ipairs(love.filesystem.getDirectoryItems(dir)) do
+      local info = love.filesystem.getInfo(dir.."/"..file)
+      if info.type == "file" then
+        love.filesystem.write(target.."/"..file, love.filesystem.read(dir.."/"..file))
+      else
+        Utils.copy(dir.."/"..file, target.."/"..file)
+      end
+    end
+    return true
+  end
+  return false
+end
+
+function Utils.moveDirectory(dir, target)
+  if Utils.copyDirectory(dir, target) then
+    Utils.removeDirectory(dir)
+    return true
+  end
+  return false
 end
 
 function Utils.toFileName(str)
@@ -246,13 +288,10 @@ function Utils.toFileName(str)
 end
 
 function Utils.createUUID()
-  local uuid = ""
-  local chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz~!@#$%^&*()-_=+/?,<.>"
-  for i = 1, 8 do
-      local l = love.math.random(1, #chars)
-      uuid = uuid .. string.sub(chars, l, l)
-  end
-  return uuid
+  local full_time = os.time()
+  local micro_time = love.timer.getTime()
+  micro_time = math.floor((micro_time - math.floor(micro_time))*62)
+  return Utils.encodeNum(full_time) .. Utils.encodeNum(micro_time)
 end
 
 return Utils

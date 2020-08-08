@@ -63,6 +63,10 @@ function Room:remove()
   end
 end
 
+function Room:getLevel()
+  return World:getLevel(self.key)
+end
+
 function Room:getParent()
   return self.exit and self.exit.parent
 end
@@ -111,6 +115,10 @@ function Room:addTile(tile, ignore_persist)
   table.insert(self.tiles, tile)
 
   tile.parent = self
+
+  if not tile.key then
+    tile.key = self:getLevel():newTileKey()
+  end
 
   if not self.tiles_by_pos[tile.x..","..tile.y] then
     self.tiles_by_pos[tile.x..","..tile.y] = {tile}
@@ -368,15 +376,15 @@ function Room:win()
     World:changeRoom(self:getParent())
     World.room:win()
   else
-    World.room_won[self.key] = true
-    if self.exit then
+    World.level.won = true
+    if self:getParent() then
       local dx, dy = Dir.toPos(self.exit_dir)
       local exiter
       if self.exit_as then
         exiter = Tile.load(self.exit_as)
         exiter.dir = self.exit_dir
       else
-        exiter = Tile(World.player, self.exit.x+dx, self.exit.y+dy, {dir = self.exit_dir})
+        exiter = Tile(self:getParent():getLevel().player, self.exit.x+dx, self.exit.y+dy, {dir = self.exit_dir})
       end
       self:getParent():addTile(exiter)
       World:changeRoom(self:getParent())

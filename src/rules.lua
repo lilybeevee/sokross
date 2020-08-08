@@ -15,7 +15,7 @@ function Rules:clear()
 end
 
 function Rules:addInherents()
-  if World.auto_rules then
+  if World.main.auto_rules then
     for _,rule in ipairs(DEFAULT_RULES) do
       table.insert(self.rules, {target = rule[1], effect = rule[2]})
     end

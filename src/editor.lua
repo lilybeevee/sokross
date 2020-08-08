@@ -7,7 +7,7 @@ function Editor:enter()
 
   World.static = true
   if not World.exists then
-    World:new("new level")
+    World:new("New Level")
   else
     World:reset()
   end
@@ -65,8 +65,8 @@ end
 
 function Editor:buildRoomTree()
   self.room_tree = {}
-  local current_room = World.root
-  for _,key in ipairs(World.start) do
+  local current_room = World:getRoom(World.main.root)
+  for _,key in ipairs(World.main.start) do
     for _,tile in ipairs(current_room.tiles_by_name["room"] or {}) do
       if tile.key == key then
         table.insert(self.room_tree, tile)
@@ -122,15 +122,14 @@ function Editor:keypressed(key)
       World.room.palette = "default"
     end
   elseif key == "a" and love.keyboard.isDown("ctrl") then
-    World.auto_rules = not World.auto_rules
+    World.main.auto_rules = not World.main.auto_rules
   elseif key == "q" then
     if love.keyboard.isDown("ctrl") then
       if not World.room.paradox then
-        World.start = {}
+        World.main.start = {}
         for _,tile in ipairs(self.room_tree) do
-          table.insert(World.start, tile.key)
+          table.insert(World.main.start, tile.key)
         end
-        World.start_key = World.room.key
       end
     else
       self.placing_entrance = not self.placing_entrance
@@ -173,8 +172,10 @@ function Editor:keypressed(key)
     self.brush.icy = not self.brush.icy
   elseif key == "s" and love.keyboard.isDown("ctrl") then
     if World.new or love.keyboard.isDown("shift") then
-      Gamestate.push(TextInput, "New level name:", not World.new and World.name or "", function(text)
-        World:save(text)
+      Gamestate.push(TextInput, "New level name:", not World.new and World.main.name or "", function(text)
+        if text ~= "" then
+          World.main:rename(text)
+        end
       end)
     else
       World:save()
@@ -186,8 +187,14 @@ function Editor:keypressed(key)
       World.room:updateVisuals()
       self:buildRoomTree()
     end)
+  elseif key == "r" and love.keyboard.isDown("ctrl") then
+    Gamestate.push(TextInput, "New sublevel name:", World.level.name, function(text)
+      if text ~= "" then
+        World.level:rename(text)
+      end
+    end)
   elseif key == "m" and love.keyboard.isDown("ctrl") then
-    Gamestate.push(TextInput, "World name to merge:", "", function(text)
+    Gamestate.push(TextInput, "Merge level into current sublevel:", "", function(text)
       self:merge(text)
     end)
   elseif key == "escape" then
@@ -195,9 +202,7 @@ function Editor:keypressed(key)
       World:changeRoom(table.remove(self.room_tree, #self.room_tree).parent)
     end
   elseif key == "return" then
-    if not World.mounted then
-      World:save()
-    end
+    World:save()
     Gamestate.switch(Game)
   elseif key == "`" then --debug
     print("nya")
@@ -237,16 +242,32 @@ function Editor:mousepressed(x, y, btn)
         local tiles = World.room:getTilesAt(self.mx, self.my)
         for _,tile in ipairs(tiles) do
           if tile.name == "room" then
-            if not tile.room_key then
-              local room = Room(7, 7, {
-                paradox = World.room.paradox,
-                palette = World.room.palette
-              })
-              tile.room_key = World:addRoom(room)
+            local function enterTile()
+              table.insert(self.room_tree, tile)
+              World:changeRoom(tile.room_key)
+              World.room:updateVisuals()
             end
-            table.insert(self.room_tree, tile)
-            World:changeRoom(tile.room_key)
-            World.room:updateVisuals()
+            if not tile.room_key then
+              if not love.keyboard.isDown("ctrl") then
+                local room = Room(7, 7, {
+                  paradox = World.room.paradox,
+                  palette = World.room.palette
+                })
+                tile.room_key = World:addRoom(room)
+                enterTile()
+              else
+                Gamestate.push(TextInput, "New sublevel name:", "", function(text)
+                  if text ~= "" then
+                    local level = World:createLevel(text, World.level)
+                    tile.room_key = level.root
+                    enterTile()
+                    World:save()
+                  end
+                end)
+              end
+            else
+              enterTile()
+            end
             return
           elseif tile.name == "tile" then
             self:selectTileActivator(tile)
@@ -316,10 +337,10 @@ function Editor:eraseTile(x,y)
 end
 
 function Editor:isStart()
-  if World.room.paradox or #World.start ~= #self.room_tree then
+  if World.room.paradox or #World.main.start ~= #self.room_tree then
     return false
   end
-  for i,key in ipairs(World.start) do
+  for i,key in ipairs(World.main.start) do
     if key ~= self.room_tree[i].key then
       return false
     end
@@ -440,7 +461,7 @@ function Editor:draw()
     love.graphics.draw(TILE_CANVAS, -TILE_CANVAS:getWidth()/2, -TILE_CANVAS:getHeight()/2)
   end
 
-  if World.auto_rules then
+  if World.main.auto_rules then
     love.graphics.origin()
     love.graphics.scale(1.5, 1.5)
     love.graphics.setColor(1, 1, 1, 0.5)

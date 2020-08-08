@@ -14,13 +14,7 @@ function Tile:init(name, x, y, o)
     self.id = 0
   end
 
-  if o.key then
-    self.key = o.key
-  else
-    self.key = tostring(World.tile_key + 1)
-    World.tile_key = World.tile_key + 1
-  end
-
+  self.key = o.key
   self.parent = o.parent
   self.name = name
   self.x = x
@@ -301,7 +295,7 @@ function Tile:getActivated()
       end
     end
   elseif self.name == "room" then
-    return self.room_key and World.room_won[self.room_key]
+    return self.room_key and World:getLevel(self.room_key).won
   end
   return false
 end
