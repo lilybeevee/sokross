@@ -7,7 +7,7 @@ function Editor:enter()
 
   World.static = true
   if not World.exists then
-    World:new("New Level")
+    World:newLevel("New Level")
   else
     World:reset()
   end
@@ -119,6 +119,8 @@ function Editor:keypressed(key)
     Gamestate.push(TextInput, "Merge level into current sublevel:", "", function(text)
       self:merge(text)
     end)
+  elseif key == "n" and love.keyboard.isDown("ctrl") then
+    World:newLevel("New Level")
   elseif key == "p" and love.keyboard.isDown("ctrl") then
     if not World.room.paradox_key then
       if World.room.paradox then
@@ -170,6 +172,7 @@ function Editor:keypressed(key)
   elseif key == "-" then
     self:resize(World.room.width-1, World.room.height-1)
   elseif key == "c" then
+    Assets.addPalettes() --reload palettes ingame so you don't have to close and reopen to see changes
     Gamestate.push(TextInput, "Enter palette name:", "", function(text)
       if Assets.palettes[text] then
         World.room.palette = text

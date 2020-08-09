@@ -3,10 +3,10 @@ local World = {}
 World.static = false
 World.exists = false
 
-function World:new(name)
+function World:newLevel(name)
   self:clear()
 
-  self.new = true
+  self.new = true --fun story: lily initially named this function World:new(). then she set self.new to be true. this was in the code for a long time because we only ever called this function once
   self.level = self:createLevel(name)
   self.main = self.level
 
