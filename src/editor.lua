@@ -188,14 +188,6 @@ function Editor:keypressed(key)
     end
   elseif key == "a" and love.keyboard.isDown("ctrl") then
     World.main.auto_rules = not World.main.auto_rules
-  elseif right and self.brush then
-    self.brush.dir = 1
-  elseif down and self.brush then
-    self.brush.dir = 2
-  elseif left and self.brush then
-    self.brush.dir = 3
-  elseif up and self.brush then
-    self.brush.dir = 4
   elseif right and love.keyboard.isDown("shift") then
     self:shift(1,0)
   elseif down and love.keyboard.isDown("shift") then
@@ -212,6 +204,14 @@ function Editor:keypressed(key)
     self:resize(World.room.width-1, World.room.height)
   elseif up and love.keyboard.isDown("ctrl") then
     self:resize(World.room.width, World.room.height-1)
+  elseif right and self.brush then
+    self.brush.dir = 1
+  elseif down and self.brush then
+    self.brush.dir = 2
+  elseif left and self.brush then
+    self.brush.dir = 3
+  elseif up and self.brush then
+    self.brush.dir = 4
   elseif key == "=" then
     self:resize(World.room.width+1, World.room.height+1)
   elseif key == "-" then
