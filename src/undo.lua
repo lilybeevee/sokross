@@ -97,6 +97,8 @@ function Undo:doUndo(undo)
   elseif action == "update_persist" then
     local key, data = undo[2], undo[3]
     World.persists[key] = data
+  elseif action == "savepoint" then
+    World.tiles_by_id[undo[2]].savepoint = undo[3]
   end
 end
 

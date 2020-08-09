@@ -29,7 +29,7 @@ function Tile:init(name, x, y, o)
   self.locked = o.locked or false
   self.persist = o.persist or false
   self.icy = o.icy or false
-  self.savepoint = nil
+  self.savepoint = o.savepoint or nil
   self.saved_tiles = {}
   
   if o.word then
@@ -134,6 +134,7 @@ function Tile:update()
           table.insert(to_destroy, self)
         end
       elseif other:hasRule("save") then
+        Undo:add("savepoint", self.id, self.savepoint)
         self.savepoint = other.id
         table.insert(other.saved_tiles, self.id)
       end
@@ -461,6 +462,7 @@ function Tile:copy()
     locked = self.locked,
     persist = self.persist,
     icy = self.icy,
+    savepoint = self.savepoint,
   })
   if tile.room_key then
     tile.room = World:getRoom(tile.room_key)
@@ -489,6 +491,7 @@ function Tile:save(instance)
   data.locked = self.locked
   data.persist = self.persist
   data.icy = self.icy
+  data.savepoint = self.savepoint
 
   if instance then
     data.id = self.id
@@ -517,6 +520,7 @@ function Tile.load(data)
     locked = data.locked,
     persist = data.persist,
     icy = data.icy,
+    savepoint = data.savepoint,
   })
 end
 
