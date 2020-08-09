@@ -27,11 +27,19 @@ function Editor:shift(ox, oy)
     Utils.removeFromTable(World.room.tiles_by_pos[tile.x..","..tile.y], tile)
     tile.x = tile.x + ox
     if not World.room:inBounds(tile.x, tile.y) then
-      tile.x = 0
+      if ox > 0 then
+        tile.x = 0
+      else
+        tile.x = World.room.width-1
+      end
     end
     tile.y = tile.y + oy
     if not World.room:inBounds(tile.x, tile.y) then
-      tile.y = 0
+      if oy > 0 then
+        tile.y = 0
+      else
+        tile.y = World.room.height-1
+      end
     end
     World.room.tiles_by_pos[tile.x..","..tile.y] = World.room.tiles_by_pos[tile.x..","..tile.y] or {}
     table.insert(World.room.tiles_by_pos[tile.x..","..tile.y], tile)
@@ -42,12 +50,20 @@ function Editor:shift(ox, oy)
     if World.room:inBounds(sx+ox, sy) then
       sx = sx+ox
     else
-      sx = 0
+      if ox > 0 then
+        sx = 0
+      else
+        sx = World.room.width-1
+      end
     end
     if World.room:inBounds(sx, sy+oy) then
       sy = sy+oy
     else
-      sy = 0
+      if oy > 0 then
+        sy = 0
+      else
+        sy = World.room.height-1
+      end
     end
     World.room.entry = {sx, sy}
   end
