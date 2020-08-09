@@ -154,7 +154,7 @@ function Tile:remove(ignore_save)
   if not World.static then
     if self.savepoint and not ignore_save then
       local save = World.tiles_by_id[self.savepoint]
-      local new_self = Tile(self.name, save.x, save.y, {dir = self.dir, word = self.word.name, icy = self.icy})
+      local new_self = Tile(self.name, save.x, save.y, {dir = self.dir, word = self.word and self.word.name or nil, icy = self.icy})
       save.parent:addTile(new_self)
       Undo:add("add", new_self.id)
     end
