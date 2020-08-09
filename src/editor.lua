@@ -467,7 +467,8 @@ function Editor:draw()
   if World.main.auto_rules then
     love.graphics.origin()
     love.graphics.scale(1.5, 1.5)
-    love.graphics.setColor(1, 1, 1, 0.5)
+    local r,g,b = palette:getColor(8, 2)
+    love.graphics.setColor(r, g, b, 0.5)
     love.graphics.draw(Assets.sprites["ui/auto_rules"], 4, 4)
   end
 end
