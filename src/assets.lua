@@ -163,6 +163,20 @@ function Assets.addTiles()
       property = "sink",
     },
     {
+      name = "lava",
+      sprites = {"water_shade", "water"},
+      colors = {{3, 2}, {3, 3}},
+      layer = 1,
+      property = "burn",
+    },
+    {
+      name = "spike",
+      sprites = {"spike"},
+      colors = {{8, 3}},
+      layer = 2,
+      property = "hurt",
+    },
+    {
       name = "flag",
       sprites = {"flag"},
       colors = {{2, 1}},
@@ -272,6 +286,29 @@ function Assets.addWords()
       name = "sink",
       type = "prop",
       color = 7,
+      dark = true,
+    },
+    {
+      name = "lava",
+      type = "noun",
+      color = 3,
+    },
+    {
+      name = "burn",
+      type = "prop",
+      color = 3,
+      dark = true,
+    },
+    {
+      name = "spike",
+      type = "noun",
+      color = 0,
+      dark = true,
+    },
+    {
+      name = "hurt",
+      type = "prop",
+      color = 1,
       dark = true,
     },
     {

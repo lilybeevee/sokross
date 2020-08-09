@@ -36,6 +36,10 @@ DEFAULT_RULES = {
   {"belt", "flat"},
   {"water", "sink"},
   {"water", "flat"},
+  {"lava", "burn"},
+  {"lava", "flat"},
+  {"spike", "hurt"},
+  {"spike", "flat"},
   {"flag", "save"},
   {"flag", "flat"},
   {"room", "push"},
@@ -44,7 +48,7 @@ DEFAULT_RULES = {
   {"tile", "flat"},
 }
 
-TILE_ACTIVATORS = {"box", "crate", "flof", "ladder", "room", "rule", "wall"}
+TILE_ACTIVATORS = {"box", "crate", "flof", "flag", "ladder", "room", "rule", "wall"}
 
 
 TILE_CANVAS = love.graphics.newCanvas(TILE_SIZE*4, TILE_SIZE*4)

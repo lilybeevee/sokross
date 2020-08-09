@@ -110,13 +110,6 @@ function Tile:update()
   local has_belt = false
   for _,other in ipairs(self.parent:getTilesAt(self.x, self.y)) do
     if other ~= self then
-      if self:hasRule("move") then
-        table.insert(movers, {tile = other, dir = self.dir})
-      elseif self:hasRule("sink") then
-        Game.sound["sink"] = true
-        table.insert(to_destroy, self)
-        table.insert(to_destroy, other)
-      end
       if other:hasRule("move") then
         has_belt = true
         if not self.belt_start then
@@ -134,6 +127,12 @@ function Tile:update()
         Game.sound["sink"] = true
         table.insert(to_destroy, self)
         table.insert(to_destroy, other)
+      elseif other:hasRule("burn") then
+        table.insert(to_destroy, self)
+      elseif other:hasRule("hurt") then
+        if self:hasRule("play") then
+          table.insert(to_destroy, self)
+        end
       elseif other:hasRule("save") then
         self.savepoint = other.id
         table.insert(other.saved_tiles, self.id)
