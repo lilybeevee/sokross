@@ -23,17 +23,34 @@ function Editor:enter()
 end
 
 function Editor:shift(ox, oy)
-  local new_tiles = {}
-  for x = 0, World.room.width-1 do
-    for y = 0, World.room.height-1 do
-      new_tiles[x+ox..","..y+oy] = World.room.tiles[x..","..y]
-      for _,tile in ipairs(World.room.tiles[x..","..y]) do
-        tile.x = tile.x + ox
-        tile.y = tile.y + oy
-      end
+  for _,tile in ipairs(World.room.tiles) do
+    Utils.removeFromTable(World.room.tiles_by_pos[tile.x..","..tile.y], tile)
+    tile.x = tile.x + ox
+    if not World.room:inBounds(tile.x, tile.y) then
+      tile.x = 0
     end
+    tile.y = tile.y + oy
+    if not World.room:inBounds(tile.x, tile.y) then
+      tile.y = 0
+    end
+    World.room.tiles_by_pos[tile.x..","..tile.y] = World.room.tiles_by_pos[tile.x..","..tile.y] or {}
+    table.insert(World.room.tiles_by_pos[tile.x..","..tile.y], tile)
   end
   self:validateTiles()
+  if World.room.entry then
+    local sx, sy = World.room.entry[1], World.room.entry[2]
+    if World.room:inBounds(sx+ox, sy) then
+      sx = sx+ox
+    else
+      sx = 0
+    end
+    if World.room:inBounds(sx, sy+oy) then
+      sy = sy+oy
+    else
+      sy = 0
+    end
+    World.room.entry = {sx, sy}
+  end
 end
 
 function Editor:resize(w, h, shiftx, shifty)
@@ -90,6 +107,10 @@ function Editor:merge(name)
 end
 
 function Editor:keypressed(key)
+  local up    = key == "w" or key == "up"
+  local left  = key == "a" or key == "left"
+  local down  = key == "s" or key == "down"
+  local right = key == "d" or key == "right"
   if key == "tab" then
     self:openTileSelector()
   elseif key == "s" and love.keyboard.isDown("ctrl") then
@@ -151,21 +172,29 @@ function Editor:keypressed(key)
     end
   elseif key == "a" and love.keyboard.isDown("ctrl") then
     World.main.auto_rules = not World.main.auto_rules
-  elseif key == "d" and self.brush then
+  elseif right and self.brush then
     self.brush.dir = 1
-  elseif key == "s" and self.brush then
+  elseif down and self.brush then
     self.brush.dir = 2
-  elseif key == "a" and self.brush then
+  elseif left and self.brush then
     self.brush.dir = 3
-  elseif key == "w" and self.brush then
+  elseif up and self.brush then
     self.brush.dir = 4
-  elseif key == "right" and love.keyboard.isDown("ctrl") then
+  elseif right and love.keyboard.isDown("shift") then
+    self:shift(1,0)
+  elseif down and love.keyboard.isDown("shift") then
+    self:shift(0,1)
+  elseif left and love.keyboard.isDown("shift") then
+    self:shift(-1,0)
+  elseif up and love.keyboard.isDown("shift") then
+    self:shift(0,-1)
+  elseif right and love.keyboard.isDown("ctrl") then
     self:resize(World.room.width+1, World.room.height)
-  elseif key == "left" and love.keyboard.isDown("ctrl") then
-    self:resize(World.room.width-1, World.room.height)
-  elseif key == "down" and love.keyboard.isDown("ctrl") then
+  elseif down and love.keyboard.isDown("ctrl") then
     self:resize(World.room.width, World.room.height+1)
-  elseif key == "up" and love.keyboard.isDown("ctrl") then
+  elseif left and love.keyboard.isDown("ctrl") then
+    self:resize(World.room.width-1, World.room.height)
+  elseif up and love.keyboard.isDown("ctrl") then
     self:resize(World.room.width, World.room.height-1)
   elseif key == "=" then
     self:resize(World.room.width+1, World.room.height+1)
