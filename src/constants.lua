@@ -50,7 +50,7 @@ DEFAULT_RULES = {
   {"tile", "flat"},
 }
 
-TILE_ACTIVATORS = {"box", "crate", "flof", "flag", "ladder", "room", "rule", "wall"}
+TILE_ACTIVATORS = {"box", "crate", "flof", "flag", "fork", "ladder", "room", "rule", "wall"}
 
 
 TILE_CANVAS = love.graphics.newCanvas(TILE_SIZE*4, TILE_SIZE*4)

@@ -194,7 +194,7 @@ function Assets.addTiles()
     {
       name = "room",
       sprites = {"rect"},
-      colors = {{4, 2}},
+      colors = {{8, 0}},
       layer = 1,
     },
     {
