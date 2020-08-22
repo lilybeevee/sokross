@@ -224,7 +224,7 @@ function Movement.canMove(tile, dir, o)
             success = true
           else
             already_entered[other] = true
-            success, new_movers = Movement.canMove(tile, dir, {reason = other_ladder and "exit" or "enter", enter = true, pushing = o.pushing, already_entered = already_entered})
+            success, new_movers = Movement.canMove(tile, dir, {x = o.x, y = o.y, vdir = o.vdir, reason = other_ladder and "exit" or "enter", enter = true, pushing = o.pushing, already_entered = already_entered})
             if success then
               current_mover = table.remove(new_movers, 1)
               Utils.merge(movers, new_movers)
