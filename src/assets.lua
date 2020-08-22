@@ -192,6 +192,14 @@ function Assets.addTiles()
       property = "hold",
     },
     {
+      name = "arrow",
+      sprites = {"arrow"},
+      colors = {{4, 3}},
+      layer = 3,
+      rotate = true,
+      property = "hold",
+    },
+    {
       name = "room",
       sprites = {"rect"},
       colors = {{8, 0}},
@@ -340,6 +348,12 @@ function Assets.addWords()
       type = "prop",
       color = 6,
       dark = true
+    },
+    {
+      name = "arrow",
+      type = "noun",
+      color = 6,
+      dark = true,
     },
     {
       name = "rule",

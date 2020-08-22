@@ -108,6 +108,8 @@ function Tile:updateVisuals()
 end
 
 function Tile:update()
+  if not self.parent then return {}, {} end
+
   local to_destroy = {}
   local movers = {}
   local has_belt = false

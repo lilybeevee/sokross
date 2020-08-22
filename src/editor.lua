@@ -345,25 +345,27 @@ function Editor:update(dt)
   self.my = math.floor(self.my / TILE_SIZE)
 
   if painting and love.mouse.isDown(1) and self.brush then
-    self:placeTile(self.mx, self.my, love.keyboard.isDown("shift"))
+    self:placeTile(self.mx, self.my, love.keyboard.isDown("shift"), love.keyboard.isDown("ctrl"))
   elseif painting and love.mouse.isDown(2) and not love.keyboard.isDown("shift") then
     self:eraseTile(self.mx, self.my)
   end
 end
 
-function Editor:placeTile(x,y,stack)
+function Editor:placeTile(x,y,stack,superstack)
   if not stack then
     self:eraseTile(x,y)
   end
   if World.room:inBounds(x,y) then
     local success = true
-    if stack then
+    if stack and not superstack then
       for _,tile in ipairs(World.room:getTilesAt(x,y)) do
         if tile.name == self.brush.name and tile.word == self.brush.word then
           success = false
           break
         end
       end
+    elseif stack and superstack then
+      painting = false
     end
     if success then
       local new_tile = self.brush:copy()
