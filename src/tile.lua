@@ -180,7 +180,7 @@ function Tile:update()
   return to_destroy, movers
 end
 
-function Tile:getHolding(x, y, dir, room)
+function Tile:getHolding(exclude_heavy, x, y, dir, room)
   x = x or self.x
   y = y or self.y
   dir = dir or self.dir
@@ -189,31 +189,11 @@ function Tile:getHolding(x, y, dir, room)
   local holding = {}
   local dx, dy = Dir.toPos(dir)
   for _,other in ipairs(room:getTilesAt(x+dx, y+dy)) do
-    if other:hasRule("hold") and other.dir == dir then
+    if other:hasRule("hold") and other.dir == dir and (not exclude_heavy or not other:hasRule("heavy")) then
       table.insert(holding, other)
     end
   end
   return holding
-end
-
-function Tile:getHeldBy(x, y, dir, room)
-  x = x or self.x
-  y = y or self.y
-  dir = dir or self.dir
-  room = room or self.parent
-
-  if not self:hasRule("hold") then
-    return {}
-  end
-
-  local heldby = {}
-  local dx, dy = Dir.toPos(dir)
-  for _,other in ipairs(room:getTilesAt(x+dx, y+dy)) do
-    if other.dir == dir then
-      heldby[other] = true
-    end
-  end
-  return heldby
 end
 
 function Tile:remove(ignore_save)

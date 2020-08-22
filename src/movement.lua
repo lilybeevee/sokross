@@ -131,7 +131,7 @@ function Movement.canMove(tile, dir, o)
     return false, {}
   end
 
-  local holding = tile:getHolding()
+  local holding = tile:getHolding(o.reason == "hold")
 
   if o.reason ~= "hold" and #holding > 0 then
     local straight = false -- i;m gay
@@ -143,7 +143,7 @@ function Movement.canMove(tile, dir, o)
       local success, new_movers = true, {}
       local mx, my, pdir, vdir
       if straight then
-        success, new_movers = Movement.canMove(held, dir, {vdir = tile.dir, reason = "hold", ignored = {[holder] = true}})
+        success, new_movers = Movement.canMove(held, dir, {vdir = tile.dir, reason = "hold", pushing = true, ignored = {[holder] = true}})
       else
         local mx, my = Vector.add(o.x or tile.x, o.y or tile.y, Vector.mul(offset, Dir.toPos(dir)))
         local pushdir
@@ -153,10 +153,10 @@ function Movement.canMove(tile, dir, o)
           pushdir = Dir.rotateCCW(dir)
         end
         mx, my = Vector.sub(mx, my, Dir.toPos(pushdir))
-        success, new_movers = Movement.canMove(held, pushdir, {x = mx, y = my, vdir = dir, reason = "hold", ignored = {[holder] = true}})
+        success, new_movers = Movement.canMove(held, pushdir, {x = mx, y = my, vdir = dir, reason = "hold", pushing = true, ignored = {[holder] = true}})
       end
       if success then
-        for _,other in ipairs(held:getHolding()) do
+        for _,other in ipairs(held:getHolding(true)) do
           local held_success, held_movers = moveHeld(held, other, offset + 1)
           success = success and held_success
           if not success then
