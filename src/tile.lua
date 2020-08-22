@@ -31,6 +31,9 @@ function Tile:init(name, x, y, o)
   self.icy = o.icy or false
   self.savepoint = o.savepoint or nil
   self.saved_tiles = {}
+
+  self.holding = {}
+  self.held_by = {}
   
   if o.word then
     self.wordname = o.word
@@ -143,7 +146,72 @@ function Tile:update()
   if not has_belt then
     self.belt_start = nil
   end
+
+  --[[local dx, dy = Dir.toPos(self.dir)
+  for held,_ in pairs(self.holding) do
+    self.holding[held] = nil
+    if World.tiles_by_id[held] then
+      World.tiles_by_id[held].held_by[self.id] = nil
+    end
+  end
+  for _,other in ipairs(self.parent:getTilesAt(self.x+dx, self.y+dy)) do
+    if other:hasRule("hold") and other.dir == self.dir then
+      self.holding[other.id] = true
+      other.held_by[self.id] = true
+    end
+  end
+  if self:hasRule("hold") then
+    for holder,_ in pairs(self.held_by) do
+      self.held_by[holder] = nil
+      if World.tiles_by_id[holder] then
+        World.tiles_by_id[holder].holding[self.id] = nil
+      end
+    end
+    for _,other in ipairs(self.parent:getTilesAt(self.x-dx, self.y-dy)) do
+      if other.dir == self.dir then
+        self.held_by[other.id] = true
+        other.holding[self.id] = true
+      end
+    end
+  end]]
+
   return to_destroy, movers
+end
+
+function Tile:getHolding(x, y, dir, room)
+  x = x or self.x
+  y = y or self.y
+  dir = dir or self.dir
+  room = room or self.parent
+
+  local holding = {}
+  local dx, dy = Dir.toPos(dir)
+  for _,other in ipairs(room:getTilesAt(x+dx, y+dy)) do
+    if other:hasRule("hold") and other.dir == dir then
+      table.insert(holding, other)
+    end
+  end
+  return holding
+end
+
+function Tile:getHeldBy(x, y, dir, room)
+  x = x or self.x
+  y = y or self.y
+  dir = dir or self.dir
+  room = room or self.parent
+
+  if not self:hasRule("hold") then
+    return {}
+  end
+
+  local heldby = {}
+  local dx, dy = Dir.toPos(dir)
+  for _,other in ipairs(room:getTilesAt(x+dx, y+dy)) do
+    if other.dir == dir then
+      heldby[other] = true
+    end
+  end
+  return heldby
 end
 
 function Tile:remove(ignore_save)
@@ -176,19 +244,14 @@ function Tile:hasRule(effect)
   return self.parent:hasRule(self.name, effect)
 end
 
-function Tile:moveTo(x, y, room, dir, ignore_persist)
-  local undo_move_args = {self.id, self.x, self.y, self.dir, self.parent.id}
-
-  if not dir then
-    dir = Dir.fromPos(x-self.x, y-self.y) or self.dir
-  end
-  self.dir = dir
+function Tile:moveTo(x, y, room, ignore_persist)
+  local undo_move_args = {self.id, self.x, self.y, self.parent.id}
 
   local last_parent = self.parent
 
   if room and self.parent ~= room then
     if self:hasRule("play") then
-      room:enter(self, dir)
+      room:enter(self, Dir.fromPos(x-self.x, y-self.y) or self.dir)
     end
 
     local last_parent_parent = self.parent:getParent()
@@ -225,6 +288,16 @@ function Tile:moveTo(x, y, room, dir, ignore_persist)
   end
 end
 
+function Tile:rotate(dir, ignore_persist)
+  if self.dir ~= dir then
+    Undo:add("rotate", self.id, self.dir)
+    self.dir = dir
+    if not ignore_persist then
+      self:updatePersistence()
+    end
+  end
+end
+
 function Tile:updatePersistence()
   if World.persists[self.key] and not World.static then
     if self.persist then
@@ -232,7 +305,8 @@ function Tile:updatePersistence()
       World.persists[self.key] = self:save()
       for _,tile in ipairs(World.tiles_by_key[self.key] or {}) do
         if tile ~= self then
-          tile:moveTo(self.x, self.y, nil, self.dir, true)
+          tile:moveTo(self.x, self.y, nil, true)
+          tile:rotate(self.dir, true)
           tile.locked = self.locked
           if tile.word then
             Game.parse_room[tile.parent] = true

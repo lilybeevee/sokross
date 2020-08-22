@@ -21,4 +21,14 @@ function Dir.reverse(dir)
   if dir == 4 then return 2 end
 end
 
+function Dir.rotateCW(dir)
+  return (dir % 4) + 1
+end
+
+function Dir.rotateCCW(dir)
+  return ((dir - 2) % 4) + 1
+end
+
+print(Dir.rotateCW(1))
+
 return Dir

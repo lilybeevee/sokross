@@ -184,6 +184,14 @@ function Assets.addTiles()
       property = "save",
     },
     {
+      name = "fork",
+      sprites = {"fork"},
+      colors = {{8, 0}},
+      layer = 4,
+      rotate = true,
+      property = "hold",
+    },
+    {
       name = "room",
       sprites = {"rect"},
       colors = {{4, 2}},
@@ -320,6 +328,18 @@ function Assets.addWords()
       name = "save",
       type = "prop",
       color = 5,
+    },
+    {
+      name = "fork",
+      type = "noun",
+      color = 0,
+      dark = true
+    },
+    {
+      name = "hold",
+      type = "prop",
+      color = 6,
+      dark = true
     },
     {
       name = "rule",

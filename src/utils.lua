@@ -89,7 +89,10 @@ function Utils.isEmpty(v)
   elseif type(v) == "string" then
     return v == ""
   elseif type(v) == "table" then
-    return #v == 0
+    for _,_ in pairs(v) do
+      return false
+    end
+    return true
   end
   return false
 end

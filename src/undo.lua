@@ -43,7 +43,7 @@ function Undo:doUndo(undo)
   Game.turn = Game.turn - 1
 
   if action == "move" then
-    local tileid, x, y, dir, roomid = undo[2], undo[3], undo[4], undo[5], undo[6]
+    local tileid, x, y, roomid = undo[2], undo[3], undo[4], undo[5]
 
     local tile = World.tiles_by_id[tileid]
     local room = roomid and World.rooms_by_id[roomid] or nil
@@ -55,7 +55,13 @@ function Undo:doUndo(undo)
       end
     end
 
-    tile:moveTo(x, y, room, dir or tile.dir, true)
+    tile:moveTo(x, y, room, true)
+  elseif action == "rotate" then
+    local tileid, dir = undo[2], undo[3]
+
+    local tile = World.tiles_by_id[tileid]
+
+    tile:rotate(dir)
   elseif action == "remove" then
     local tiledata, roomid = undo[2], undo[3]
 

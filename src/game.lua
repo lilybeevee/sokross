@@ -93,6 +93,7 @@ function Game:doTurn(dir)
   Undo.enabled = true
   Undo:new()
   self.turn = self.turn + 1
+  World.room:updateTiles()
   Movement.turn(dir)
   self:reparse()
   self:doTransitions()

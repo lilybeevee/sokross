@@ -42,6 +42,8 @@ DEFAULT_RULES = {
   {"spike", "flat"},
   {"flag", "save"},
   {"flag", "flat"},
+  {"fork", "hold"},
+  {"fork", "stop"},
   {"room", "push"},
   {"rule", "push"},
   {"line", "flat"},

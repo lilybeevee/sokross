@@ -29,7 +29,7 @@ function Movement.move(moves)
     local movers = {}
     for _,move in ipairs(moves) do
       if move.dir then
-        local success, new_movers = Movement.canMove(move.tile, move.dir, false, "move")
+        local success, new_movers = Movement.canMove(move.tile, move.dir, {reason = "move"})
         if success then
           move_done = false
           Utils.merge(movers, new_movers)
@@ -61,12 +61,17 @@ function Movement.move(moves)
         local undo_room = mover.room.id ~= mover.tile.parent.id and mover.tile.parent.id or nil
         Undo:add("move", mover.tile.id, mover.tile.x, mover.tile.y, undo_dir, undo_room)]]
 
-        mover.tile:moveTo(mover.x, mover.y, mover.room, mover.dir)
+        if mover.x ~= mover.tile.x or mover.y ~= mover.tile.y or mover.room ~= mover.tile.parent then
+          has_moved[mover.tile] = true
+        end
+        mover.tile:moveTo(mover.x, mover.y, mover.room)
+        if mover.vdir then
+          mover.tile:rotate(mover.vdir)
+        end
         if mover.tile.icy then
           move_done = false
           table.insert(still_moving, {tile = mover.tile, dir = mover.dir})
         end
-        has_moved[mover.tile] = true
       end
     end
     for _,mover in ipairs(movers) do
@@ -97,7 +102,7 @@ function Movement.move(moves)
   Game:handleDels(to_destroy)
 end
 
-function Movement.canMove(tile, dir, enter, reason, pushing, already_entered)
+function Movement.canMove(tile, dir, o)
   if tile.name == "room" then
     local conns = tile:getConnections("line")
     for _,conn in ipairs(conns) do
@@ -108,75 +113,147 @@ function Movement.canMove(tile, dir, enter, reason, pushing, already_entered)
   end
 
   local x, y, room
-  if not enter then
+  if not o.enter then
     local dx, dy = Dir.toPos(dir)
-    x, y = tile.x + dx, tile.y + dy
-    room = tile.parent
+    x, y = (o.x or tile.x) + dx, (o.y or tile.y) + dy
+    room = o.room or tile.parent
   else
-    x, y, room = Movement.getNextTile(tile, dir)
+    x, y, room = Movement.getNextTile(o.x or tile.x, o.y or tile.y, dir, tile.parent)
   end
-  already_entered = already_entered or {}
+  local vdir = o.vdir or dir
+  local already_entered = o.already_entered or {}
+  local ignored = o.ignored or {}
 
-  local current_mover = {tile = tile, x = x, y = y, dir = dir, room = room, reason = reason}
+  local current_mover = {moved = true, tile = tile, x = x, y = y, dir = dir, vdir = vdir, room = room, reason = o.reason or "unknown"}
   local movers = {}
 
   if not room.void and not room:inBounds(x, y) and room:hasRule("wall", "stop") then
     return false, {}
   end
 
-  for _,other in ipairs(room:getTilesAt(x, y)) do
-    local success, pushable, moveable = false, false, true
+  local holding = tile:getHolding()
 
-    if other:hasRule("push") then
-      pushable = true
-      if pushing and other:hasRule("heavy") then
-        success = false
-      else
-        local new_movers
-        success, new_movers = Movement.canMove(other, dir, false, "push", true)
-        if success then
-          Utils.merge(movers, new_movers)
-        end
-      end
-    elseif other:hasRule("stop") then
-      moveable = false
-      success = false
-    else
-      success = true
+  if o.reason ~= "hold" and #holding > 0 then
+    local straight = false -- i;m gay
+    if dir == tile.dir or dir == Dir.reverse(tile.dir) then
+      straight = true -- fuck
     end
 
-    local is_ladder = not tile.room_key and room.exit and tile:hasRule("exit")
-    local is_entry = (tile.room_key and not tile.locked) or is_ladder
-
-    local other_ladder = not other.room_key and room.exit and other:hasRule("exit")
-    local can_enter = (other.room_key and not other.locked) or other_ladder
-
-    if can_enter and not (success and pushable) then
-      local new_movers
-      if tile.room and tile.persist and tile.parent:getParent() and tile.parent.exit.key == tile.key then
-        -- really hacky solution to just bypass the infloop paradox if we're pushing a persistent room out of itself
-        success = true
-      elseif already_entered[other] then
-        current_mover.x, current_mover.y, current_mover.room = tile.parent:getParadoxEntry(tile)
-        success = true
+    local function moveHeld(holder, held, offset)
+      local success, new_movers = true, {}
+      local mx, my, pdir, vdir
+      if straight then
+        success, new_movers = Movement.canMove(held, dir, {vdir = tile.dir, reason = "hold", ignored = {[holder] = true}})
       else
-        already_entered[other] = true
-        success, new_movers = Movement.canMove(tile, dir, true, other_ladder and "exit" or "enter", pushing, already_entered)
-        if success then
-          current_mover = table.remove(new_movers, 1)
-          Utils.merge(movers, new_movers)
-          entered = true
+        local mx, my = Vector.add(o.x or tile.x, o.y or tile.y, Vector.mul(offset, Dir.toPos(dir)))
+        local pushdir
+        if dir == Dir.rotateCW(tile.dir) then
+          pushdir = Dir.rotateCW(dir)
+        else
+          pushdir = Dir.rotateCCW(dir)
         end
+        mx, my = Vector.sub(mx, my, Dir.toPos(pushdir))
+        success, new_movers = Movement.canMove(held, pushdir, {x = mx, y = my, vdir = dir, reason = "hold", ignored = {[holder] = true}})
       end
-    elseif is_entry and not success and moveable then
-      local new_movers
-      success, new_movers = Movement.canMove(other, Dir.reverse(dir), true, is_ladder and "exit" or "enter", pushing)
       if success then
-        Utils.merge(movers, new_movers)
+        for _,other in ipairs(held:getHolding()) do
+          local held_success, held_movers = moveHeld(held, other, offset + 1)
+          success = success and held_success
+          if not success then
+            return false, {}
+          else
+            Utils.merge(new_movers, held_movers)
+          end
+        end
+      end
+      return success, new_movers
+    end
+
+    if straight then
+      current_mover.vdir = tile.dir
+    else
+      current_mover.moved = false
+      current_mover.x = tile.x
+      current_mover.y = tile.y
+    end
+    for _,other in ipairs(holding) do
+      local held_success, held_movers = moveHeld(tile, other, 1)
+      if not held_success then
+        return false, {}
+      else
+        Utils.merge(movers, held_movers)
       end
     end
-    if not success then
-      return false, {}
+  end
+
+  if current_mover.moved then
+    for _,other in ipairs(room:getTilesAt(x, y)) do
+      if not ignored[other] and not Utils.contains(holding, other) then
+        local success, pushable, moveable = false, false, true
+        if other:hasRule("push") or (other.dir == dir and other:hasRule("hold")) then
+          pushable = true
+          if o.pushing and other:hasRule("heavy") then
+            success = false
+          else
+            local new_movers
+            success, new_movers = Movement.canMove(other, dir, {reason = "push", pushing = true})
+            if success then
+              Utils.merge(movers, new_movers)
+            end
+          end
+        elseif other:hasRule("stop") then
+          moveable = false
+          success = false
+        else
+          success = true
+        end
+
+        local is_ladder = not tile.room_key and room.exit and tile:hasRule("exit")
+        local is_entry = (tile.room_key and not tile.locked) or is_ladder
+
+        local other_ladder = not other.room_key and room.exit and other:hasRule("exit")
+        local can_enter = (other.room_key and not other.locked) or other_ladder
+
+        if can_enter and not (success and pushable) then
+          local new_movers
+          if tile.room and tile.persist and tile.parent:getParent() and tile.parent.exit.key == tile.key then
+            -- really hacky solution to just bypass the infloop paradox if we're pushing a persistent room out of itself
+            success = true
+          elseif already_entered[other] then
+            current_mover.x, current_mover.y, current_mover.room = tile.parent:getParadoxEntry(tile)
+            success = true
+          else
+            already_entered[other] = true
+            success, new_movers = Movement.canMove(tile, dir, {reason = other_ladder and "exit" or "enter", enter = true, pushing = o.pushing, already_entered = already_entered})
+            if success then
+              current_mover = table.remove(new_movers, 1)
+              Utils.merge(movers, new_movers)
+              entered = true
+            end
+          end
+        elseif is_entry and not success and moveable then
+          local new_movers
+          success, new_movers = Movement.canMove(other, Dir.reverse(dir), {reason = is_ladder and "exit" or "enter", enter = true, pushing = o.pushing})
+          if success then
+            Utils.merge(movers, new_movers)
+          end
+        end
+        if not success then
+          return false, {}
+        end
+      end
+    end
+  end
+
+  for _,mover in ipairs(movers) do
+    if not mover.moved then
+      current_mover.moved = false
+      current_mover.x = tile.x
+      current_mover.y = tile.y
+      if #holding > 0 or o.reason == "hold" then
+        current_mover.vdir = tile.dir
+      end
+      break
     end
   end
 
@@ -184,11 +261,11 @@ function Movement.canMove(tile, dir, enter, reason, pushing, already_entered)
   return true, movers
 end
 
-function Movement.getNextTile(tile, dir)
+function Movement.getNextTile(sx, sy, dir, room)
   local dx, dy = Dir.toPos(dir)
-  local x, y = tile.x + dx, tile.y + dy
+  local x, y = sx + dx, sy + dy
   
-  for _,tile in ipairs(tile.parent:getTilesAt(x, y)) do
+  for _,tile in ipairs(room:getTilesAt(x, y)) do
     if tile.room_key then
       if not tile.room then
         tile.room = World:getRoom(tile.room_key)
@@ -206,7 +283,7 @@ function Movement.getNextTile(tile, dir)
       end
     end
   end
-  return x, y, tile.parent
+  return x, y, room
 end
 
 return Movement
