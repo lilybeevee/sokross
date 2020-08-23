@@ -250,6 +250,7 @@ function Movement.canMove(tile, dir, o)
       current_mover.moved = false
       current_mover.x = tile.x
       current_mover.y = tile.y
+      current_mover.room = tile.parent
       if #holding > 0 or o.reason == "hold" then
         current_mover.vdir = tile.dir
       end
@@ -261,25 +262,35 @@ function Movement.canMove(tile, dir, o)
   return true, movers
 end
 
-function Movement.getNextTile(sx, sy, dir, room)
+function Movement.getNextTile(sx, sy, dir, room, entered)
   local dx, dy = Dir.toPos(dir)
   local x, y = sx + dx, sy + dy
+
+  local entered = entered or {}
   
   for _,tile in ipairs(room:getTilesAt(x, y)) do
-    if tile.room_key then
-      if not tile.room then
-        tile.room = World:getRoom(tile.room_key)
-        Undo:add("create_room", tile.room.id, tile.id)
-        tile.room.exit = tile
-        tile.room:parse()
-      end
-      local ex, ey = tile.room:getEntry()
-      return ex, ey, tile.room
-    elseif tile.parent.exit and tile:hasRule("exit") then
-      if tile.parent:getParent() then
-        return tile.parent.exit.x + dx, tile.parent.exit.y + dy, tile.parent:getParent()
-      else
-        return tile.parent:getParadoxEntry(tile)
+    if entered[tile] then
+      return tile.parent:getParadoxEntry(tile)
+    else
+      if tile.room_key then
+        if not tile.room then
+          tile.room = World:getRoom(tile.room_key)
+          Undo:add("create_room", tile.room.id, tile.id)
+          tile.room.exit = tile
+          tile.room:parse()
+        end
+        local ex, ey = tile.room:getEntry()
+        local new_entered = Utils.copy(entered)
+        new_entered[tile] = true
+        return Movement.getNextTile(ex, ey, 0, tile.room, new_entered)
+      elseif tile.parent.exit and tile:hasRule("exit") then
+        if tile.parent:getParent() then
+          local new_entered = Utils.copy(entered)
+          new_entered[tile] = true
+          return Movement.getNextTile(tile.parent.exit.x, tile.parent.exit.y, dir, tile.parent:getParent(), new_entered)
+        else
+          return tile.parent:getParadoxEntry(tile)
+        end
       end
     end
   end

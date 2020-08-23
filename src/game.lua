@@ -97,7 +97,7 @@ function Game:doTurn(dir)
   Movement.turn(dir)
   self:reparse()
   self:doTransitions()
-  World.room:updateTiles()
+  self:updateTiles()
   self:checkWin()
   World.room:updateLines()
   World.room:updateVisuals()
@@ -164,6 +164,8 @@ function Game:doTransitions()
   local moved_tile = {}
   local moved_persist = {}
 
+  local full_update_room = Utils.copy(self.update_room)
+
   while not transitions_done do
     local rooms = self.update_room
     self.update_room = {}
@@ -228,6 +230,18 @@ function Game:doTransitions()
         end
       end
     end
+
+    for room,_ in pairs(self.update_room) do
+      full_update_room[room] = true
+    end
+  end
+
+  self.update_room = full_update_room
+end
+
+function Game:updateTiles()
+  for room,_ in pairs(self.update_room) do
+    room:updateTiles()
   end
 end
 

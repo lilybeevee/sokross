@@ -231,6 +231,11 @@ function Tile:moveTo(x, y, room, ignore_persist)
 
   local last_parent = self.parent
 
+  if x ~= self.x or y ~= self.y or room ~= self.parent then
+    Game.update_room[last_parent] = true
+    Game.update_room[self.parent] = true
+  end
+
   if room and self.parent ~= room then
     if self:hasRule("play") then
       room:enter(self, Dir.fromPos(x-self.x, y-self.y) or self.dir)
@@ -263,10 +268,6 @@ function Tile:moveTo(x, y, room, ignore_persist)
       self:updatePersistence()
     end
     Undo:add("move", unpack(undo_move_args))
-  end
-  if room then
-    Game.update_room[last_parent] = true
-    Game.update_room[room] = true
   end
 end
 
