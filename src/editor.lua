@@ -248,6 +248,7 @@ function Editor:keypressed(key)
   elseif key == "escape" then
     if #self.room_tree > 0 then
       World:changeRoom(table.remove(self.room_tree, #self.room_tree).parent)
+      World.room:updateVisuals()
     end
   elseif key == "return" then
     World:save()

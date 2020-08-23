@@ -127,13 +127,15 @@ function Tile:update()
       if other:hasRule("move") then
         has_belt = true
         if not self.belt_start then
+          self.belt_moved = false
           self.belt_start = {other.x, other.y}
           table.insert(movers, {tile = self, dir = other.dir})
         else
-          if other.x == self.belt_start[1] and other.y == self.belt_start[2] then
+          if other.x == self.belt_start[1] and other.y == self.belt_start[2] and self.belt_moved then
             self:goToParadox()
             self.belt_start = nil
           else
+            self.belt_moved = true
             table.insert(movers, {tile = self, dir = other.dir})
           end
         end
