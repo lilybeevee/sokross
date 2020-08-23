@@ -118,8 +118,9 @@ function Movement.canMove(tile, dir, o)
     x, y = (o.x or tile.x) + dx, (o.y or tile.y) + dy
     room = o.room or tile.parent
   else
-    x, y, room = Movement.getNextTile(o.x or tile.x, o.y or tile.y, dir, tile.parent)
+    x, y, room = Movement.getNextTile(o.x or tile.x, o.y or tile.y, dir, o.room or tile.parent)
   end
+  local prevx, prevy = Vector.sub(x, y, Dir.toPos(dir))
   local vdir = o.vdir or dir
   local already_entered = o.already_entered or {}
   local ignored = o.ignored or {}
@@ -145,7 +146,7 @@ function Movement.canMove(tile, dir, o)
       if straight then
         success, new_movers = Movement.canMove(held, dir, {vdir = tile.dir, reason = "hold", pushing = true, ignored = {[holder] = true}})
       else
-        local mx, my = Vector.add(o.x or tile.x, o.y or tile.y, Vector.mul(offset, Dir.toPos(dir)))
+        local mx, my = Vector.add(prevx, prevy, Vector.mul(offset, Dir.toPos(dir)))
         local pushdir
         if dir == Dir.rotateCW(tile.dir) then
           pushdir = Dir.rotateCW(dir)
@@ -153,7 +154,7 @@ function Movement.canMove(tile, dir, o)
           pushdir = Dir.rotateCCW(dir)
         end
         mx, my = Vector.sub(mx, my, Dir.toPos(pushdir))
-        success, new_movers = Movement.canMove(held, pushdir, {x = mx, y = my, vdir = dir, reason = "hold", pushing = true, ignored = {[holder] = true}})
+        success, new_movers = Movement.canMove(held, pushdir, {x = mx, y = my, room = room, vdir = dir, reason = "hold", pushing = true, ignored = {[holder] = true}})
       end
       if success then
         for _,other in ipairs(held:getHolding(true)) do
@@ -224,7 +225,7 @@ function Movement.canMove(tile, dir, o)
             success = true
           else
             already_entered[other] = true
-            success, new_movers = Movement.canMove(tile, dir, {x = o.x, y = o.y, vdir = o.vdir, reason = other_ladder and "exit" or "enter", enter = true, pushing = o.pushing, already_entered = already_entered})
+            success, new_movers = Movement.canMove(tile, dir, {x = prevx, y = prevy, room = room, vdir = o.vdir, reason = other_ladder and "exit" or "enter", enter = true, pushing = o.pushing, already_entered = already_entered})
             if success then
               current_mover = table.remove(new_movers, 1)
               Utils.merge(movers, new_movers)
@@ -280,14 +281,16 @@ function Movement.getNextTile(sx, sy, dir, room, entered)
           tile.room:parse()
         end
         local ex, ey = tile.room:getEntry()
-        local new_entered = Utils.copy(entered)
+        --[[local new_entered = Utils.copy(entered)
         new_entered[tile] = true
-        return Movement.getNextTile(ex, ey, 0, tile.room, new_entered)
+        return Movement.getNextTile(ex, ey, 0, tile.room, new_entered)]]
+        return ex, ey, tile.room
       elseif tile.parent.exit and tile:hasRule("exit") then
         if tile.parent:getParent() then
-          local new_entered = Utils.copy(entered)
+          --[[local new_entered = Utils.copy(entered)
           new_entered[tile] = true
-          return Movement.getNextTile(tile.parent.exit.x, tile.parent.exit.y, dir, tile.parent:getParent(), new_entered)
+          return Movement.getNextTile(tile.parent.exit.x, tile.parent.exit.y, dir, tile.parent:getParent(), new_entered)]]
+          return tile.parent.exit.x + dx, tile.parent.exit.y + dy, tile.parent:getParent()
         else
           return tile.parent:getParadoxEntry(tile)
         end

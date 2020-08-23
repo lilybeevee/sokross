@@ -73,7 +73,7 @@ function World:changeRoom(room, small)
   if Gamestate.current() == Game then
     self.room:parse()
   end
-  if not small then
+  --[[if not small then
     for _,tile in ipairs(room.tiles_by_name["room"] or {}) do
       if tile.room_key and not tile.room then
         tile.room = self:getRoom(tile.room_key)
@@ -84,7 +84,7 @@ function World:changeRoom(room, small)
         end
       end
     end
-  end
+  end]]
 end
 
 function World:getRoom(key)

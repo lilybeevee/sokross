@@ -68,6 +68,15 @@ function Tile:init(name, x, y, o)
 end
 
 function Tile:updateVisuals()
+  if self.room_key and not self.room then
+    self.room = World:getRoom(self.room_key)
+    Undo:add("create_room", self.room.id, self.id)
+    self.room.exit = self
+    if not World.static then
+      self.room:parse()
+    end
+  end
+
   if self.word then
     local prev_active = Utils.copy(self.active_sides)
 
