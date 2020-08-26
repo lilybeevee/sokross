@@ -297,4 +297,18 @@ function Utils.createUUID()
   return Utils.encodeNum(full_time) .. Utils.encodeNum(micro_time)
 end
 
+local graphics_canvas_stack = {}
+function Utils.pushCanvas(canvas)
+  love.graphics.push()
+  table.insert(graphics_canvas_stack, 1, love.graphics.getCanvas())
+  if canvas then
+    love.graphics.setCanvas(canvas)
+  end
+end
+
+function Utils.popCanvas()
+  love.graphics.setCanvas(table.remove(graphics_canvas_stack, 1))
+  love.graphics.pop()
+end
+
 return Utils

@@ -188,7 +188,7 @@ function Movement.canMove(tile, dir, o)
   end
 
   if current_mover.moved then
-    for _,other in ipairs(room:getTilesAt(x, y)) do
+    for _,other in ipairs(room:getTilesAt(x, y, true)) do
       if not ignored[other] and not Utils.contains(holding, other) then
         local success, pushable, moveable = false, false, true
         if other:hasRule("push") or (other.dir == dir and other:hasRule("hold")) then
@@ -197,7 +197,7 @@ function Movement.canMove(tile, dir, o)
             success = false
           else
             local new_movers
-            success, new_movers = Movement.canMove(other, dir, {reason = "push", pushing = true})
+            success, new_movers = Movement.canMove(other, dir, {x=x, y=y, room=room, reason = "push", pushing = true})
             if success then
               Utils.merge(movers, new_movers)
             end
@@ -234,7 +234,7 @@ function Movement.canMove(tile, dir, o)
           end
         elseif is_entry and not success and moveable then
           local new_movers
-          success, new_movers = Movement.canMove(other, Dir.reverse(dir), {reason = is_ladder and "exit" or "enter", enter = true, pushing = o.pushing})
+          success, new_movers = Movement.canMove(other, Dir.reverse(dir), {x=x, y=y, room=room, reason = is_ladder and "exit" or "enter", enter = true, pushing = o.pushing})
           if success then
             Utils.merge(movers, new_movers)
           end

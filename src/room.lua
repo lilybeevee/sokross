@@ -243,12 +243,28 @@ function Room:updateTiles()
   Movement.move(moves)
 end
 
-function Room:getTilesAt(x, y)
+function Room:getTilesAt(x, y, use_tele)
+  local tiles = {}
   if self.tiles_by_pos[x..","..y] then
-    return Utils.copy(self.tiles_by_pos[x..","..y])
-  else
-    return {}
+    Utils.merge(tiles, self.tiles_by_pos[x..","..y])
+    local insert_tele = false
+    if use_tele then
+      for _,tile in ipairs(self.tiles_by_pos[x..","..y]) do
+        if tile:hasRule("tele") then
+          insert_tele = true
+          break
+        end
+      end
+    end
+    if insert_tele then
+      for id,_ in pairs(World.teles) do
+        if not Utils.contains(tiles, World.tiles_by_id[id]) then
+          table.insert(tiles, World.tiles_by_id[id])
+        end
+      end
+    end
   end
+  return tiles
 end
 
 function Room:getTilesByName(name)
@@ -283,27 +299,9 @@ function Room:draw()
 
   for i=1,7 do
     for _,tile in ipairs(self.tiles_by_layer[i]) do
-      tile:draw(palette)
-
       love.graphics.push()
-      love.graphics.translate(tile.x*TILE_SIZE + TILE_SIZE/2, tile.y*TILE_SIZE + TILE_SIZE/2)
-      love.graphics.scale(0.5, 0.5)
-
-      if tile.persist then -- draw greennesss
-        palette:setColor(6, 3)
-        love.graphics.setShader(OUTLINE_SHADER)
-        OUTLINE_SHADER:send("pixelsize", {1/TILE_CANVAS:getWidth(), 1/TILE_CANVAS:getHeight()})
-        OUTLINE_SHADER:send("size", 3)
-        love.graphics.draw(TILE_CANVAS, -TILE_CANVAS:getWidth()/2, -TILE_CANVAS:getHeight()/2)
-        love.graphics.setShader()
-      end
-      if tile.icy then
-        love.graphics.setColor(0, 1, 1)
-      else
-        love.graphics.setColor(1, 1, 1)
-      end
-      love.graphics.draw(TILE_CANVAS, -TILE_CANVAS:getWidth()/2, -TILE_CANVAS:getHeight()/2)
-
+      love.graphics.translate(tile.x*TILE_SIZE, tile.y*TILE_SIZE)
+      tile:draw(palette)
       love.graphics.pop()
     end
   end

@@ -490,26 +490,8 @@ function Editor:draw()
     love.graphics.setColor(r,g,b,0.5)
     love.graphics.draw(starsprite)
   elseif self.brush then
-    self.brush:draw(palette)
-
-    love.graphics.translate(self.mx*TILE_SIZE + TILE_SIZE/2, self.my*TILE_SIZE + TILE_SIZE/2)
-    love.graphics.scale(0.5, 0.5)
-
-    if self.brush.persist then -- draw greennesss
-      local r,g,b = palette:getColor(6, 3)
-      love.graphics.setColor(r, g, b, 0.5)
-      love.graphics.setShader(OUTLINE_SHADER)
-      OUTLINE_SHADER:send("pixelsize", {1/TILE_CANVAS:getWidth(), 1/TILE_CANVAS:getHeight()})
-      OUTLINE_SHADER:send("size", 3)
-      love.graphics.draw(TILE_CANVAS, -TILE_CANVAS:getWidth()/2, -TILE_CANVAS:getHeight()/2)
-      love.graphics.setShader()
-    end
-    if self.brush.icy then
-      love.graphics.setColor(0, 1, 1, 0.5)
-    else
-      love.graphics.setColor(1, 1, 1, 0.5)
-    end
-    love.graphics.draw(TILE_CANVAS, -TILE_CANVAS:getWidth()/2, -TILE_CANVAS:getHeight()/2)
+    love.graphics.translate(self.mx*TILE_SIZE, self.my*TILE_SIZE)
+    self.brush:draw(palette, 0.5)
   end
 
   if World.main.auto_rules then

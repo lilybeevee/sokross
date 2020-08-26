@@ -192,12 +192,18 @@ function Assets.addTiles()
       property = "hold",
     },
     {
+      name = "ring",
+      sprites = {"ring"},
+      colors = {{8, 0}},
+      layer = 2,
+      property = "tele",
+    },
+    {
       name = "arrow",
       sprites = {"arrow"},
       colors = {{4, 3}},
       layer = 3,
       rotate = true,
-      property = "hold",
     },
     {
       name = "room",
@@ -348,6 +354,16 @@ function Assets.addWords()
       type = "prop",
       color = 6,
       dark = true
+    },
+    {
+      name = "ring",
+      type = "noun",
+      color = 2
+    },
+    {
+      name = "tele",
+      type = "prop",
+      color = 7
     },
     {
       name = "arrow",

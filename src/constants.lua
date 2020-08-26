@@ -44,6 +44,8 @@ DEFAULT_RULES = {
   {"flag", "flat"},
   {"fork", "hold"},
   {"fork", "stop"},
+  {"ring", "tele"},
+  {"ring", "flat"},
   {"room", "push"},
   {"rule", "push"},
   {"line", "flat"},
@@ -54,6 +56,7 @@ TILE_ACTIVATORS = {"box", "crate", "flof", "flag", "fork", "ladder", "room", "ru
 
 
 TILE_CANVAS = love.graphics.newCanvas(TILE_SIZE*4, TILE_SIZE*4)
+HOLO_CANVAS = love.graphics.newCanvas(TILE_SIZE*2, TILE_SIZE*2)
 
 OUTLINE_SHADER = love.graphics.newShader([[
 	extern vec2 pixelsize;

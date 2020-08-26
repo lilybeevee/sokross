@@ -33,6 +33,7 @@ function World:clear()
   self.rooms_by_key = {}
   self.persists = {}
   self.persists_in_room = {}
+  self.teles = {}
 
   self.paradox_keys = {}
   self.void_room = nil

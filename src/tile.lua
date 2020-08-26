@@ -31,9 +31,6 @@ function Tile:init(name, x, y, o)
   self.icy = o.icy or false
   self.savepoint = o.savepoint or nil
   self.saved_tiles = {}
-
-  self.holding = {}
-  self.held_by = {}
   
   if o.word then
     self.wordname = o.word
@@ -65,6 +62,7 @@ function Tile:init(name, x, y, o)
   self.active = false -- for valid rules
   self.active_sides = {false, false, false, false} -- for side connections
   self.activated = false -- for tiles and rooms
+  self.is_tele = false
 end
 
 function Tile:updateVisuals()
@@ -113,6 +111,9 @@ function Tile:updateVisuals()
       end
     end
   end
+
+  self.is_tele = self:hasRule("tele")
+
   self.first_update = false
 end
 
@@ -122,6 +123,7 @@ function Tile:update()
   local to_destroy = {}
   local movers = {}
   local has_belt = false
+  local has_tele = false
   for _,other in ipairs(self.parent:getTilesAt(self.x, self.y)) do
     if other ~= self then
       if other:hasRule("move") then
@@ -154,39 +156,19 @@ function Tile:update()
         self.savepoint = other.id
         table.insert(other.saved_tiles, self.id)
       end
+      if other:hasRule("tele") then
+        has_tele = true
+      end
     end
   end
   if not has_belt then
     self.belt_start = nil
   end
-
-  --[[local dx, dy = Dir.toPos(self.dir)
-  for held,_ in pairs(self.holding) do
-    self.holding[held] = nil
-    if World.tiles_by_id[held] then
-      World.tiles_by_id[held].held_by[self.id] = nil
-    end
+  if has_tele then
+    World.teles[self.id] = true
+  else
+    World.teles[self.id] = nil
   end
-  for _,other in ipairs(self.parent:getTilesAt(self.x+dx, self.y+dy)) do
-    if other:hasRule("hold") and other.dir == self.dir then
-      self.holding[other.id] = true
-      other.held_by[self.id] = true
-    end
-  end
-  if self:hasRule("hold") then
-    for holder,_ in pairs(self.held_by) do
-      self.held_by[holder] = nil
-      if World.tiles_by_id[holder] then
-        World.tiles_by_id[holder].holding[self.id] = nil
-      end
-    end
-    for _,other in ipairs(self.parent:getTilesAt(self.x-dx, self.y-dy)) do
-      if other.dir == self.dir then
-        self.held_by[other.id] = true
-        other.holding[self.id] = true
-      end
-    end
-  end]]
 
   return to_destroy, movers
 end
@@ -199,7 +181,7 @@ function Tile:getHolding(exclude_heavy, x, y, dir, room)
 
   local holding = {}
   local dx, dy = Dir.toPos(dir)
-  for _,other in ipairs(room:getTilesAt(x+dx, y+dy)) do
+  for _,other in ipairs(room:getTilesAt(x+dx, y+dy, true)) do
     if other:hasRule("hold") and other.dir == dir and (not exclude_heavy or not other:hasRule("heavy")) then
       table.insert(holding, other)
     end
@@ -221,6 +203,7 @@ function Tile:remove(ignore_save)
       Undo:add("add", new_self.id)
     end
     World.tiles_by_id[self.id] = nil
+    World.teles[self.id] = nil
   end
   Utils.removeFromTable(World.tiles_by_key[self.key], self)
 end
@@ -384,9 +367,8 @@ function Tile:getActivated()
   return false
 end
 
-function Tile:draw(palette)
-  love.graphics.push()
-  love.graphics.setCanvas(TILE_CANVAS)
+function Tile:draw(palette, alpha)
+  Utils.pushCanvas(TILE_CANVAS)
   love.graphics.clear()
   love.graphics.origin()
   love.graphics.translate(TILE_SIZE*2, TILE_SIZE*2)
@@ -506,8 +488,48 @@ function Tile:draw(palette)
     end
   end
 
-  love.graphics.setCanvas()
+  Utils.popCanvas()
+
+  -- actually draw
+  love.graphics.push()
+  love.graphics.translate(TILE_SIZE/2, TILE_SIZE/2)
+  love.graphics.scale(0.5, 0.5)
+  alpha = alpha or 1
+
+  if self.persist then -- draw greennesss
+    palette:setColor(6, 3)
+    love.graphics.setShader(OUTLINE_SHADER)
+    OUTLINE_SHADER:send("pixelsize", {1/TILE_CANVAS:getWidth(), 1/TILE_CANVAS:getHeight()})
+    OUTLINE_SHADER:send("size", 3)
+    love.graphics.draw(TILE_CANVAS, -TILE_CANVAS:getWidth()/2, -TILE_CANVAS:getHeight()/2)
+    love.graphics.setShader()
+  end
+  if self.icy then
+    love.graphics.setColor(0, 1, 1, alpha)
+  else
+    love.graphics.setColor(1, 1, 1, alpha)
+  end
+
+  love.graphics.draw(TILE_CANVAS, -TILE_CANVAS:getWidth()/2, -TILE_CANVAS:getHeight()/2)
   love.graphics.pop()
+
+  if self.is_tele then
+    Utils.pushCanvas(HOLO_CANVAS)
+    love.graphics.clear()
+    love.graphics.origin()
+    love.graphics.translate(HOLO_CANVAS:getWidth()/2 - TILE_SIZE/2, HOLO_CANVAS:getHeight()/2 - TILE_SIZE/2)
+
+    for id,_ in pairs(World.teles) do
+      if World.tiles_by_id[id] then
+        World.tiles_by_id[id]:draw(palette)
+      end
+    end
+
+    Utils.popCanvas()
+
+    love.graphics.setColor(1, 1, 1, alpha * 0.5)
+    love.graphics.draw(HOLO_CANVAS, TILE_SIZE/2 - HOLO_CANVAS:getWidth()/2, TILE_SIZE/2 - HOLO_CANVAS:getHeight()/2)
+  end
 end
 
 function Tile:getHasSides()
