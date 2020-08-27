@@ -161,6 +161,11 @@ function Tile:update()
         has_tele = true
       end
     end
+    if (other:hasRule("shut") and self:hasRule("open")) or (other:hasRule("open") and self:hasRule("shut")) then
+      Game.sound["unlock"] = true
+      table.insert(to_destroy, self)
+      table.insert(to_destroy, other)
+    end
   end
   if not has_belt then
     self.belt_start = nil

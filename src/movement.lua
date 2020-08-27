@@ -230,7 +230,7 @@ function Movement.canMove(tile, dir, o)
         local other_ladder = not other.room_key and room.exit and other:hasRule("exit")
         local can_enter = (other.room_key and not other.locked) or other_ladder
 
-        if not success and (tile:hasRule("open") and other:hasRule("shut")) or (tile:hasRule("shut") and other:hasRule("open")) then
+        if not success and ((tile:hasRule("open") and other:hasRule("shut")) or (tile:hasRule("shut") and other:hasRule("open"))) then
           table.insert(effects, {"unlock", tile, other})
           success = true
         elseif can_enter and not (success and pushable) then

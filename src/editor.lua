@@ -323,6 +323,7 @@ function Editor:mousepressed(x, y, btn)
             return
           elseif tile.word then
             Gamestate.push(SideEditor, tile)
+            return
           end
         end
       end
