@@ -179,7 +179,7 @@ function Assets.addTiles()
     {
       name = "flag",
       sprites = {"flag"},
-      colors = {{2, 1}},
+      colors = {{2, 3}},
       layer = 2,
       property = "save",
     },
@@ -197,6 +197,21 @@ function Assets.addTiles()
       colors = {{8, 0}},
       layer = 2,
       property = "tele",
+    },
+    {
+      name = "key",
+      sprites = {"key"},
+      colors = {{3, 3}},
+      layer = 3,
+      rotate = true,
+      property = "open"
+    },
+    {
+      name = "lock",
+      sprites = {"door"},
+      colors = {{2, 2}},
+      layer = 4,
+      property = "shut"
     },
     {
       name = "arrow",
@@ -364,6 +379,27 @@ function Assets.addWords()
       name = "tele",
       type = "prop",
       color = 7
+    },
+    {
+      name = "key",
+      type = "noun",
+      color = 3
+    },
+    {
+      name = "open",
+      type = "prop",
+      color = 5
+    },
+    {
+      name = "lock",
+      type = "noun",
+      color = 2,
+      dark = true
+    },
+    {
+      name = "shut",
+      type = "prop",
+      color = 1,
     },
     {
       name = "arrow",

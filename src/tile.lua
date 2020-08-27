@@ -146,6 +146,7 @@ function Tile:update()
         table.insert(to_destroy, self)
         table.insert(to_destroy, other)
       elseif other:hasRule("burn") then
+        Game.sound["burn"] = true
         table.insert(to_destroy, self)
       elseif other:hasRule("hurt") then
         if self:hasRule("play") then

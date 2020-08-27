@@ -27,12 +27,14 @@ function Movement.move(moves)
 
     local still_moving = {}
     local movers = {}
+    local effects = {}
     for _,move in ipairs(moves) do
       if move.dir then
-        local success, new_movers = Movement.canMove(move.tile, move.dir, {reason = "move"})
+        local success, new_movers, new_effects = Movement.canMove(move.tile, move.dir, {reason = "move"})
         if success then
           move_done = false
           Utils.merge(movers, new_movers)
+          Utils.merge(effects, new_effects)
         else
           move.tile.belt_start = nil
           table.insert(still_moving, move)
@@ -89,6 +91,15 @@ function Movement.move(moves)
         table.insert(still_moving, new)
       end
     end
+    for _,effect in ipairs(effects) do
+      local name = effect[1]
+
+      if name == "unlock" then
+        Game.sound["unlock"] = true
+        table.insert(to_destroy, effect[2])
+        table.insert(to_destroy, effect[3])
+      end
+    end
 
     moves = still_moving
   end
@@ -127,9 +138,10 @@ function Movement.canMove(tile, dir, o)
 
   local current_mover = {moved = true, tile = tile, x = x, y = y, dir = dir, vdir = vdir, room = room, reason = o.reason or "unknown"}
   local movers = {}
+  local effects = {}
 
   if not room.void and not room:inBounds(x, y) and room:hasRule("wall", "stop") then
-    return false, {}
+    return false, {}, {}
   end
 
   local holding = tile:getHolding(o.reason == "hold")
@@ -141,10 +153,10 @@ function Movement.canMove(tile, dir, o)
     end
 
     local function moveHeld(holder, held, offset)
-      local success, new_movers = true, {}
+      local success, new_movers, new_effects = true, {}, {}
       local mx, my, pdir, vdir
       if straight then
-        success, new_movers = Movement.canMove(held, dir, {vdir = tile.dir, reason = "hold", pushing = true, ignored = {[holder] = true}})
+        success, new_movers, new_effects = Movement.canMove(held, dir, {vdir = tile.dir, reason = "hold", pushing = true, ignored = {[holder] = true}})
       else
         local mx, my = Vector.add(prevx, prevy, Vector.mul(offset, Dir.toPos(dir)))
         local pushdir
@@ -154,20 +166,21 @@ function Movement.canMove(tile, dir, o)
           pushdir = Dir.rotateCCW(dir)
         end
         mx, my = Vector.sub(mx, my, Dir.toPos(pushdir))
-        success, new_movers = Movement.canMove(held, pushdir, {x = mx, y = my, room = room, vdir = dir, reason = "hold", pushing = true, ignored = {[holder] = true}})
+        success, new_movers, new_effects = Movement.canMove(held, pushdir, {x = mx, y = my, room = room, vdir = dir, reason = "hold", pushing = true, ignored = {[holder] = true}})
       end
       if success then
         for _,other in ipairs(held:getHolding(true)) do
-          local held_success, held_movers = moveHeld(held, other, offset + 1)
+          local held_success, held_movers, held_effects = moveHeld(held, other, offset + 1)
           success = success and held_success
           if not success then
-            return false, {}
+            return false, {}, {}
           else
             Utils.merge(new_movers, held_movers)
+            Utils.merge(new_effects, held_effects)
           end
         end
       end
-      return success, new_movers
+      return success, new_movers, new_effects
     end
 
     if straight then
@@ -178,11 +191,12 @@ function Movement.canMove(tile, dir, o)
       current_mover.y = tile.y
     end
     for _,other in ipairs(holding) do
-      local held_success, held_movers = moveHeld(tile, other, 1)
+      local held_success, held_movers, held_effects = moveHeld(tile, other, 1)
       if not held_success then
-        return false, {}
+        return false, {}, {}
       else
         Utils.merge(movers, held_movers)
+        Utils.merge(effects, held_effects)
       end
     end
   end
@@ -196,10 +210,11 @@ function Movement.canMove(tile, dir, o)
           if o.pushing and other:hasRule("heavy") then
             success = false
           else
-            local new_movers
-            success, new_movers = Movement.canMove(other, dir, {x=x, y=y, room=room, reason = "push", pushing = true})
+            local new_movers, new_effects
+            success, new_movers, new_effects = Movement.canMove(other, dir, {x=x, y=y, room=room, reason = "push", pushing = true})
             if success then
               Utils.merge(movers, new_movers)
+              Utils.merge(effects, new_effects)
             end
           end
         elseif other:hasRule("stop") then
@@ -215,8 +230,11 @@ function Movement.canMove(tile, dir, o)
         local other_ladder = not other.room_key and room.exit and other:hasRule("exit")
         local can_enter = (other.room_key and not other.locked) or other_ladder
 
-        if can_enter and not (success and pushable) then
-          local new_movers
+        if not success and (tile:hasRule("open") and other:hasRule("shut")) or (tile:hasRule("shut") and other:hasRule("open")) then
+          table.insert(effects, {"unlock", tile, other})
+          success = true
+        elseif can_enter and not (success and pushable) then
+          local new_movers, new_effects
           if tile.room and tile.persist and tile.parent:getParent() and tile.parent.exit.key == tile.key then
             -- really hacky solution to just bypass the infloop paradox if we're pushing a persistent room out of itself
             success = true
@@ -225,22 +243,24 @@ function Movement.canMove(tile, dir, o)
             success = true
           else
             already_entered[other] = true
-            success, new_movers = Movement.canMove(tile, dir, {x = prevx, y = prevy, room = room, vdir = o.vdir, reason = other_ladder and "exit" or "enter", enter = true, pushing = o.pushing, already_entered = already_entered})
+            success, new_movers, new_effects = Movement.canMove(tile, dir, {x = prevx, y = prevy, room = room, vdir = o.vdir, reason = other_ladder and "exit" or "enter", enter = true, pushing = o.pushing, already_entered = already_entered})
             if success then
               current_mover = table.remove(new_movers, 1)
               Utils.merge(movers, new_movers)
+              Utils.merge(effects, new_effects)
               entered = true
             end
           end
         elseif is_entry and not success and moveable then
-          local new_movers
-          success, new_movers = Movement.canMove(other, Dir.reverse(dir), {x=x, y=y, room=room, reason = is_ladder and "exit" or "enter", enter = true, pushing = o.pushing})
+          local new_movers, new_effects
+          success, new_movers, new_effects = Movement.canMove(other, Dir.reverse(dir), {x=x, y=y, room=room, reason = is_ladder and "exit" or "enter", enter = true, pushing = o.pushing})
           if success then
             Utils.merge(movers, new_movers)
+            Utils.merge(effects, new_effects)
           end
         end
         if not success then
-          return false, {}
+          return false, {}, {}
         end
       end
     end
@@ -260,7 +280,7 @@ function Movement.canMove(tile, dir, o)
   end
 
   table.insert(movers, 1, current_mover)
-  return true, movers
+  return true, movers, effects
 end
 
 function Movement.getNextTile(sx, sy, dir, room, entered)
