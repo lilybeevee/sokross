@@ -13,6 +13,8 @@ Dir = require "src.dir"
 Game = require "src.game"
 Editor = require "src.editor"
 Selector = require "src.selector"
+TextInput = require "src.textinput"
+SideEditor = require "src.sideeditor"
 World = require "src.world"
 Level = require "src.level"
 Tile = require "src.tile"
@@ -20,7 +22,6 @@ Room = require "src.room"
 Rules = require "src.rules"
 Movement = require "src.movement"
 Undo = require "src.undo"
-TextInput = require "src.textinput"
 
 function love.load()
   print("Sokoma? What's that")

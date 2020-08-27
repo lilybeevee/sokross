@@ -36,15 +36,15 @@ function Tile:init(name, x, y, o)
     self.wordname = o.word
     self.word = Assets.words[o.word]
 
-    local side_type = "none"
+    self.side_type = "none"
     if self.word.type == "noun" then
-      side_type = "in"
+      self.side_type = "in"
       self.layer = 7
     elseif self.word.type == "prop" then
-      side_type = "out"
+      self.side_type = "out"
       self.layer = 6
     elseif self.word.type == "mod" then
-      side_type = "all"
+      self.side_type = "all"
       self.layer = 5
     end
 
@@ -52,7 +52,7 @@ function Tile:init(name, x, y, o)
 
     self.sides = {}
     for i = 1, 4 do
-      self.sides[i] = o.sides[i] and side_type or "none"
+      self.sides[i] = o.sides[i] and self.side_type or "none"
     end
   end
 

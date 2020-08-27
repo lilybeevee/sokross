@@ -321,6 +321,8 @@ function Editor:mousepressed(x, y, btn)
           elseif tile.name == "tile" then
             self:selectTileActivator(tile)
             return
+          elseif tile.word then
+            Gamestate.push(SideEditor, tile)
           end
         end
       end
