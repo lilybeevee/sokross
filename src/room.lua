@@ -148,6 +148,7 @@ function Room:addTile(tile, ignore_persist)
             Undo:add("add", tile.id)
             room:addTile(tile, true)
             Game.parse_room[room] = true
+            Game.update_room[room] = true
           end
         end
       end
@@ -225,18 +226,16 @@ function Room:updateVisuals()
   end
 end
 
-function Room:updateTiles()
+function Room:updateTiles(small)
   local to_destroy = {}
   local moves = {}
   for _,tile in ipairs(self.tiles) do
-    if not Game.updated_tiles[tile] then
-      local new_to_destroy, new_moves = tile:update()
-      for _,new in ipairs(new_to_destroy) do
-        table.insert(to_destroy, new)
-      end
-      for _,new in ipairs(new_moves) do
-        table.insert(moves, new)
-      end
+    local new_to_destroy, new_moves = tile:update(small)
+    for _,new in ipairs(new_to_destroy) do
+      table.insert(to_destroy, new)
+    end
+    for _,new in ipairs(new_moves) do
+      table.insert(moves, new)
     end
   end
   Game:handleDels(to_destroy)

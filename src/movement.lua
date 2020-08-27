@@ -78,7 +78,7 @@ function Movement.move(moves)
     end
     for _,mover in ipairs(movers) do
       local new_to_destroy, new_moves = mover.tile:update()
-      Game.updated_tiles[mover.tile] = true
+      --Game.updated_tiles[mover.tile] = true
       
       for _,new in ipairs(new_to_destroy) do
         table.insert(to_destroy, new)

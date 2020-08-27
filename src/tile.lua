@@ -117,7 +117,7 @@ function Tile:updateVisuals()
   self.first_update = false
 end
 
-function Tile:update()
+function Tile:update(small)
   if not self.parent then return {}, {} end
 
   local to_destroy = {}
@@ -125,46 +125,55 @@ function Tile:update()
   local has_belt = false
   local has_tele = false
   for _,other in ipairs(self.parent:getTilesAt(self.x, self.y)) do
-    if other ~= self then
-      if other:hasRule("move") then
-        has_belt = true
-        if not self.belt_start then
-          self.belt_moved = false
-          self.belt_start = {other.x, other.y}
-          table.insert(movers, {tile = self, dir = other.dir})
-        else
-          if other.x == self.belt_start[1] and other.y == self.belt_start[2] and self.belt_moved then
-            self:goToParadox()
-            self.belt_start = nil
-          else
-            self.belt_moved = true
+    --[[ Large Update ]]
+    if not small then
+      if other ~= self then
+        -- not self
+        if other:hasRule("move") then
+          has_belt = true
+          if not self.belt_start then
+            self.belt_moved = false
+            self.belt_start = {other.x, other.y}
             table.insert(movers, {tile = self, dir = other.dir})
+          else
+            if other.x == self.belt_start[1] and other.y == self.belt_start[2] and self.belt_moved then
+              self:goToParadox()
+              self.belt_start = nil
+            else
+              self.belt_moved = true
+              table.insert(movers, {tile = self, dir = other.dir})
+            end
           end
+        elseif other:hasRule("sink") then
+          Game.sound["sink"] = true
+          table.insert(to_destroy, self)
+          table.insert(to_destroy, other)
+        elseif other:hasRule("burn") then
+          Game.sound["burn"] = true
+          table.insert(to_destroy, self)
+        elseif other:hasRule("save") then
+          Undo:add("savepoint", self.id, self.savepoint)
+          self.savepoint = other.id
+          table.insert(other.saved_tiles, self.id)
         end
-      elseif other:hasRule("sink") then
-        Game.sound["sink"] = true
+      end
+      -- can be self
+      if (other:hasRule("shut") and self:hasRule("open")) or (other:hasRule("open") and self:hasRule("shut")) then
+        Game.sound["unlock"] = true
         table.insert(to_destroy, self)
         table.insert(to_destroy, other)
-      elseif other:hasRule("burn") then
-        Game.sound["burn"] = true
-        table.insert(to_destroy, self)
       elseif other:hasRule("hurt") then
         if self:hasRule("play") then
           table.insert(to_destroy, self)
         end
-      elseif other:hasRule("save") then
-        Undo:add("savepoint", self.id, self.savepoint)
-        self.savepoint = other.id
-        table.insert(other.saved_tiles, self.id)
       end
+    end
+    --[[ Small Update ]]
+    if other ~= self then
+      -- not self
       if other:hasRule("tele") then
         has_tele = true
       end
-    end
-    if (other:hasRule("shut") and self:hasRule("open")) or (other:hasRule("open") and self:hasRule("shut")) then
-      Game.sound["unlock"] = true
-      table.insert(to_destroy, self)
-      table.insert(to_destroy, other)
     end
   end
   if not has_belt then
@@ -232,8 +241,8 @@ function Tile:moveTo(x, y, room, ignore_persist)
   local last_parent = self.parent
 
   if x ~= self.x or y ~= self.y or room ~= self.parent then
-    Game.update_room[last_parent] = true
     Game.update_room[self.parent] = true
+    Game.update_room[room] = true
   end
 
   if room and self.parent ~= room then

@@ -14,16 +14,19 @@ function Game:enter()
   World:reset()
   
   World.room:parse()
-  World.room:updateLines()
-  World.room:updateVisuals()
-  self.sound = {}
 
+  self.sound = {}
   self.move_key_buffer = {}
   self.move_timer = 0
   self.undoing = false
   self.undo_timer = 0
   self.undo_timer_mult = 1
-  self.updated_tiles = {}
+  self.update_room = {}
+
+  World.room:updateLines()
+  World.room:updateVisuals()
+  World.room:updateTiles(true)
+  self.sound = {}
 
   --print(dump(World.room.rules.rules))
 end
@@ -70,6 +73,7 @@ function Game:update(dt)
       self.undo_timer_mult = math.min(3, self.undo_timer_mult + 0.1)
       Undo:back()
       self:reparse()
+      World.room:updateTiles(true)
     end
   else
     self.undo_timer = 0
@@ -89,7 +93,6 @@ end
 
 function Game:doTurn(dir)
   self.update_room = {}
-  self.updated_tiles = {}
   Undo.enabled = true
   Undo:new()
   self.turn = self.turn + 1
@@ -99,6 +102,7 @@ function Game:doTurn(dir)
   self:doTransitions()
   self:updateTiles()
   self:checkWin()
+  --World.room:updateTiles()
   World.room:updateLines()
   World.room:updateVisuals()
   self:playSounds()
@@ -251,11 +255,12 @@ function Game:updateTiles()
 end
 
 function Game:checkWin()
-  if #World.room:getTilesByName("tile") == 0 then return end
+  if #World.room:getTilesByName("tile") == 0 then return false end
   for _,tile in ipairs(World.room:getTilesByName("tile")) do
-    if not tile:getActivated() then return end
+    if not tile:getActivated() then return false end
   end
   World.room:win()
+  return true
 end
 
 function Game:getTransform()
