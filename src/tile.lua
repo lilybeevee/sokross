@@ -240,9 +240,11 @@ function Tile:moveTo(x, y, room, ignore_persist)
 
   local last_parent = self.parent
 
-  if x ~= self.x or y ~= self.y or room ~= self.parent then
+  if x ~= self.x or y ~= self.y or (room and room ~= self.parent) then
     Game.update_room[self.parent] = true
-    Game.update_room[room] = true
+    if room then
+      Game.update_room[room] = true
+    end
   end
 
   if room and self.parent ~= room then
