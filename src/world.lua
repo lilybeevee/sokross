@@ -184,7 +184,7 @@ end
 
 function World:loadLevel(path)
   local dir = table.concat({"levels", unpack(path)}, "/")
-  if not love.filesystem.getInfo(dir.."/".."level.json") then return end
+  if not love.filesystem.getInfo(dir.."/".."level.json") then print("failed "..dir) return end
 
   local level = Level(JSON.decode(love.filesystem.read(dir.."/".."level.json")))
   level.path = path
@@ -223,10 +223,12 @@ function World:merge(name)
     local new_dir = table.concat({"levels", unpack(new_path)}, "/")
 
     Utils.removeDirectory(new_dir)
-    Utils.copyDirectory("levels/"..name, new_dir)
+    print(Utils.copyDirectory("levels/"..name, new_dir))
 
     local level = self:loadLevel(new_path)
     table.insert(self.level.sublevels, level.uuid)
+
+    return level.root
   end
 end
 

@@ -262,12 +262,13 @@ end
 
 function Utils.copyDirectory(dir, target, force)
   if love.filesystem.getInfo(dir, "directory") and (force or not love.filesystem.getInfo(target, "directory")) then
+    love.filesystem.createDirectory(target)
     for _,file in ipairs(love.filesystem.getDirectoryItems(dir)) do
       local info = love.filesystem.getInfo(dir.."/"..file)
       if info.type == "file" then
         love.filesystem.write(target.."/"..file, love.filesystem.read(dir.."/"..file))
       else
-        Utils.copy(dir.."/"..file, target.."/"..file)
+        Utils.copyDirectory(dir.."/"..file, target.."/"..file)
       end
     end
     return true
