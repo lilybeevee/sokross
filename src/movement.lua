@@ -66,7 +66,7 @@ function Movement.move(moves)
         if mover.x ~= mover.tile.x or mover.y ~= mover.tile.y or mover.room ~= mover.tile.parent then
           has_moved[mover.tile] = true
         end
-        mover.tile:moveTo(mover.x, mover.y, mover.room)
+        mover.tile:moveTo(mover.x, mover.y, mover.room, mover.dir)
         if mover.vdir then
           mover.tile:rotate(mover.vdir)
         end
@@ -145,6 +145,7 @@ function Movement.canMove(tile, dir, o)
   end
 
   local holding = tile:getHolding(o.reason == "hold")
+  local all_holding = {}
 
   if o.reason ~= "hold" and #holding > 0 then
     local straight = false -- i;m gay
@@ -170,11 +171,21 @@ function Movement.canMove(tile, dir, o)
       end
       if success then
         for _,other in ipairs(held:getHolding(true)) do
+          table.insert(all_holding, other)
           local held_success, held_movers, held_effects = moveHeld(held, other, offset + 1)
           success = success and held_success
           if not success then
             return false, {}, {}
           else
+            for _,mover in ipairs(held_movers) do
+              if not mover.moved then
+                new_movers[1].moved = false
+                new_movers[1].x = held.x
+                new_movers[1].y = held.y
+                new_movers[1].room = held.parent
+                new_movers[1].vdir = held.dir
+              end
+            end
             Utils.merge(new_movers, held_movers)
             Utils.merge(new_effects, held_effects)
           end
@@ -191,10 +202,12 @@ function Movement.canMove(tile, dir, o)
       current_mover.y = tile.y
     end
     for _,other in ipairs(holding) do
+      table.insert(all_holding, other)
       local held_success, held_movers, held_effects = moveHeld(tile, other, 1)
       if not held_success then
         return false, {}, {}
       else
+        all_held_movers = held_movers
         Utils.merge(movers, held_movers)
         Utils.merge(effects, held_effects)
       end
@@ -274,6 +287,16 @@ function Movement.canMove(tile, dir, o)
       current_mover.room = tile.parent
       if #holding > 0 or o.reason == "hold" then
         current_mover.vdir = tile.dir
+      end
+
+      if holding then
+        local new_movers = {}
+        for _,oldmover in ipairs(movers) do
+          if not Utils.contains(all_holding, oldmover.tile) then
+            table.insert(new_movers, oldmover)
+          end
+        end
+        movers = new_movers
       end
       break
     end

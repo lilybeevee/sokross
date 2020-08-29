@@ -37,6 +37,27 @@ function Level:newTileKey()
   return key
 end
 
+function Level:reset()
+  local remove_persists = Utils.copy(World.persists)
+  for key,_ in pairs(remove_persists) do
+    if World:getLevel(key) == self then
+      World.persists[key] = nil
+      local to_remove = Utils.copy(World.tiles_by_key[key])
+      for _,tile in ipairs(to_remove) do
+        if tile.parent then
+          tile.parent:removeTile(tile, true)
+        end
+      end
+    end
+  end
+  for _,roomkey in ipairs(self.rooms) do
+    local to_remove = Utils.copy(World.rooms_by_key[roomkey] or {})
+    for _,room in pairs(to_remove) do
+      room:remove()
+    end
+  end
+end
+
 function Level:rename(name)
   local filename = Utils.toFileName(name)
 

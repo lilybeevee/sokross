@@ -61,6 +61,9 @@ function Room:remove()
   for _,tile in ipairs(self.tiles) do
     tile:remove()
   end
+  if self.exit then
+    self.exit.room = nil
+  end
 end
 
 function Room:getLevel()
@@ -93,10 +96,21 @@ end
 function Room:enter(tile, dir)
   World:changeRoom(self)
   if tile.parent and tile.parent:getLayer() < self:getLayer() then
-    if tile then
-      self.exit_as = tile:save()
+    if not World.level_exits[self:getLevel()] then
+      World.level_exits[self:getLevel()] = {
+        player = tile.id,
+        exit = self.exit and self.exit.id or nil,
+        parent = (self.exit and self.exit.parent) and self.exit.parent.id or nil,
+        dir = Dir.reverse(dir) or 1,
+        pos = {tile.x, tile.y},
+        layer = self:getLayer()
+      }
     end
-    self.exit_dir = Dir.reverse(dir) or self.exit_dir
+  end
+  for level,info in pairs(World.level_exits) do
+    if info.layer > self:getLayer() then
+      World.level_exits[level] = nil
+    end
   end
   if self.last_parsed == 0 or (self:getParent() and self:getParent().last_parsed > self.last_parsed) then
     self:parse()
@@ -362,7 +376,34 @@ function Room:getParadoxEntry(tile)
 end
 
 function Room:win()
-  local has_exit = false
+  self:getLevel().won = true
+  local info = World.level_exits[self:getLevel()]
+  World.level_exits[self:getLevel()] = nil
+  if info and info.parent and World.rooms_by_id[info.parent] then
+    local parent = World.rooms_by_id[info.parent]
+    local exit = info.exit and World.tiles_by_id[info.exit] or nil
+    local exiter = World.tiles_by_id[info.player]
+    if exiter then
+      exiter.parent:removeTile(exiter)
+    else
+      exiter = Tile(parent:getLevel().player, info.pos[1], info.pos[2])
+    end
+    exiter.dir = info.dir
+    if exit and exit.parent and exit.parent.id == info.parent then
+      local dx, dy = Dir.toPos(info.dir)
+      exiter.x = exit.x + dx
+      exiter.y = exit.y + dy
+      --exit.room:remove()
+      --exit.room = World:getRoom(exit.room_key)
+      --exit.room.exit = exit
+    end
+    self:getLevel():reset()
+    parent:addTile(exiter)
+    World:changeRoom(parent)
+  else
+    Gamestate.switch(Editor)
+  end
+  --[[local has_exit = false
   for _,exitrule in ipairs(self:getRules(nil, "exit")) do
     if #self:getTilesByName(exitrule.target) > 0 then
       has_exit = true
@@ -390,7 +431,7 @@ function Room:win()
     else -- ideally this can't happen unless you're just playtesting from editor
       Gamestate.switch(Editor)
     end
-  end
+  end]]
 end
 
 function Room:save()

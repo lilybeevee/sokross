@@ -235,7 +235,7 @@ function Tile:hasRule(effect)
   return self.parent:hasRule(self.name, effect)
 end
 
-function Tile:moveTo(x, y, room, ignore_persist)
+function Tile:moveTo(x, y, room, dir, ignore_persist)
   local undo_move_args = {self.id, self.x, self.y, self.parent.id}
 
   local last_parent = self.parent
@@ -249,7 +249,7 @@ function Tile:moveTo(x, y, room, ignore_persist)
 
   if room and self.parent ~= room then
     if self:hasRule("play") then
-      room:enter(self, Dir.fromPos(x-self.x, y-self.y) or self.dir)
+      room:enter(self, dir or self.dir)
     end
 
     local last_parent_parent = self.parent:getParent()
@@ -299,7 +299,7 @@ function Tile:updatePersistence()
       World.persists[self.key] = self:save()
       for _,tile in ipairs(World.tiles_by_key[self.key] or {}) do
         if tile ~= self then
-          tile:moveTo(self.x, self.y, nil, true)
+          tile:moveTo(self.x, self.y, nil, self.dir, true)
           tile:rotate(self.dir, true)
           tile.locked = self.locked
           if tile.word then
