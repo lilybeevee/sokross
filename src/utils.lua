@@ -66,6 +66,10 @@ function dump(o)
   end
 end
 
+function Utils.clamp(v, min, max)
+  return math.max(math.min(v, max), min)
+end
+
 function Utils.encodeNum(n)
   n = math.floor(n)
   local digits = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"

@@ -71,8 +71,8 @@ end
 
 function Editor:resize(w, h, shiftx, shifty)
   local old_w, old_h = World.room.width, World.room.height
-  World.room.width = w
-  World.room.height = h
+  World.room.width = Utils.clamp(w, 1, 12)
+  World.room.height = Utils.clamp(h, 1, 12)
   if shiftx or shifty then
     self:shift(shiftx or 0, shifty or 0)
   end
