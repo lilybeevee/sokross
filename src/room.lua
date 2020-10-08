@@ -97,7 +97,6 @@ function Room:enter(tile, dir)
   World:changeRoom(self)
   if tile.parent and tile.parent:getLayer() < self:getLayer() then
     if not World.level_exits[self:getLevel()] then
-      print("new exit!")
       World.level_exits[self:getLevel()] = {
         player = tile.id,
         exit = self.exit and self.exit.id or nil,
@@ -398,7 +397,7 @@ function Room:checkWin(recursed)
   local rooms = self:getTilesByName("room")
   if won and #rooms > 0 then
     for _,tile in ipairs(rooms) do
-      if World:getLevel(tile.room_key) == self:getLevel() then
+      if tile.room_key and World:getLevel(tile.room_key) == self:getLevel() then
         if tile.room then
           if not recursed[tile.room] then
             local new_won, new_any = tile.room:checkWin(Utils.copy(recursed))
@@ -429,7 +428,7 @@ function Room:isWinnable(recursed)
     return true
   end
   for _,tile in ipairs(self:getTilesByName("room")) do
-    if not recursed[tile.room_key] and World:getLevel(tile.room_key) == self:getLevel() then
+    if tile.room_key and not recursed[tile.room_key] and World:getLevel(tile.room_key) == self:getLevel() then
       local room = World:getRoom(tile.room_key)
       if room:isWinnable(Utils.copy(recursed)) then
         World.room_winnable[self.key] = true

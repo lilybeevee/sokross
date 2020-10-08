@@ -45,6 +45,20 @@ function World:reset()
   self:load(self.main.path[1])
 end
 
+function World:smallReset()
+  local info = self.level_exits[self.level]
+  if info and info.exit and self.tiles_by_id[info.exit] then
+    local exit = self.tiles_by_id[info.exit]
+    self.level:reset()
+    self:changeRoom(self:getRoom(exit.room_key))
+    exit.room = self.room
+    self.room.exit = exit
+    self:spawnPlayer()
+  else
+    self:reset()
+  end
+end
+
 function World:spawnPlayer()
   if not World.static then
     return self.room:addTile(Tile(self.level.player, self.room:getEntry()))
