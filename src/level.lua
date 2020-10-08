@@ -83,12 +83,14 @@ function Level:win()
     self:reset()
     parent:addTile(exiter)
     World:changeRoom(parent)
+    Undo:clear()
+    Undo.enabled = false
   else
     Gamestate.switch(Editor)
   end
 end
 
-function Level:rename(name)
+function Level:rename(name, copy)
   local filename = Utils.toFileName(name)
 
   local path_index = #self.path
@@ -105,7 +107,11 @@ function Level:rename(name)
     local new_dir = table.concat({"levels", unpack(self.path)}, "/")
 
     Utils.removeDirectory(new_dir)
-    Utils.moveDirectory(old_dir, new_dir)
+    if copy then
+      Utils.copyDirectory(old_dir, new_dir)
+    else
+      Utils.moveDirectory(old_dir, new_dir)
+    end
   end
 
   self.name = name

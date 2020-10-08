@@ -41,6 +41,7 @@ function Game:keypressed(key)
   elseif key == "z" then
     self.undoing = true
   elseif key == "r" then
+    Undo:clear()
     World:smallReset()
     World.room:updateLines()
     World.room:updateVisuals()

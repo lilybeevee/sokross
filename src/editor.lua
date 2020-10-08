@@ -131,9 +131,9 @@ function Editor:keypressed(key)
     love.system.openURL("file://"..love.filesystem.getSaveDirectory().."/levels")
   elseif key == "s" and love.keyboard.isDown("ctrl") then
     if World.new or love.keyboard.isDown("shift") then
-      Gamestate.push(TextInput, "New level name:", not World.new and World.main.name or "", function(text)
+      Gamestate.push(TextInput, "Save level as:", not World.new and World.main.name or "", function(text)
         if text ~= "" then
-          World.main:rename(text)
+          World.main:rename(text, true)
         end
       end)
     else
@@ -238,13 +238,17 @@ function Editor:keypressed(key)
       self.placing_entrance = not self.placing_entrance
     end
   elseif key == "p" then
-    self.brush.persist = not self.brush.persist
+    if self.brush then
+      self.brush.persist = not self.brush.persist
+    end
   elseif key == "l" then
-    if self.brush.name == "room" or self.brush.name == "line" then
+    if self.brush and self.brush.name == "room" or self.brush.name == "line" then
       self.brush.locked = not self.brush.locked
     end
   elseif key == "i" then
-    self.brush.icy = not self.brush.icy
+    if self.brush then
+      self.brush.icy = not self.brush.icy
+    end
   elseif key == "escape" then
     if #self.room_tree > 0 then
       World:changeRoom(table.remove(self.room_tree, #self.room_tree).parent)
