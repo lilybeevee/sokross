@@ -24,7 +24,7 @@ Movement = require "src.movement"
 Undo = require "src.undo"
 
 function love.load()
-  print("Sokoma? What's that")
+  print("Sokoma? What's that Fuck this joke doesnt work anymore")
 
   love.graphics.setDefaultFilter("nearest","nearest")
   Assets.load()
