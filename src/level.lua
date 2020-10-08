@@ -58,6 +58,36 @@ function Level:reset()
   end
 end
 
+function Level:win()
+  self.won = true
+  local info = World.level_exits[self]
+  World.level_exits[self] = nil
+  if info and info.parent and World.rooms_by_id[info.parent] then
+    local parent = World.rooms_by_id[info.parent]
+    local exit = info.exit and World.tiles_by_id[info.exit] or nil
+    local exiter = World.tiles_by_id[info.player]
+    if exiter then
+      exiter.parent:removeTile(exiter)
+    else
+      exiter = Tile(parent:getLevel().player, info.pos[1], info.pos[2])
+    end
+    exiter.dir = info.dir
+    if exit and exit.parent and exit.parent.id == info.parent then
+      local dx, dy = Dir.toPos(info.dir)
+      exiter.x = exit.x + dx
+      exiter.y = exit.y + dy
+      --exit.room:remove()
+      --exit.room = World:getRoom(exit.room_key)
+      --exit.room.exit = exit
+    end
+    self:reset()
+    parent:addTile(exiter)
+    World:changeRoom(parent)
+  else
+    Gamestate.switch(Editor)
+  end
+end
+
 function Level:rename(name)
   local filename = Utils.toFileName(name)
 

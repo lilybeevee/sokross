@@ -224,13 +224,13 @@ function Assets.addTiles()
       name = "room",
       sprites = {"rect"},
       colors = {{8, 0}},
-      layer = 1,
+      layer = 3,
     },
     {
       name = "line",
       sprites = {"line"},
       colors = {{8, 3}},
-      layer = 1,
+      layer = 2,
     },
     {
       name = "tile",

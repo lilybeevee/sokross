@@ -32,6 +32,4 @@ function Dir.rotateCCW(dir)
   return ((dir - 2) % 4) + 1
 end
 
-print(Dir.rotateCW(1))
-
 return Dir

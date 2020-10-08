@@ -7,7 +7,7 @@ function Editor:enter()
 
   World.static = true
   if not World.exists then
-    World:newLevel("New Level")
+    World:newLevel("new level")
   else
     World:reset()
   end
@@ -157,7 +157,7 @@ function Editor:keypressed(key)
       self:merge(text)
     end)
   elseif key == "n" and love.keyboard.isDown("ctrl") then
-    World:newLevel("New Level")
+    World:newLevel("new level")
   elseif key == "p" and love.keyboard.isDown("ctrl") then
     if not World.room.paradox_key then
       if World.room.paradox then

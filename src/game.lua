@@ -255,12 +255,15 @@ function Game:updateTiles()
 end
 
 function Game:checkWin()
-  if #World.room:getTilesByName("tile") == 0 then return false end
-  for _,tile in ipairs(World.room:getTilesByName("tile")) do
-    if not tile:getActivated() then return false end
+  local level_top = World.room
+  while level_top:getParent() and level_top:getParent():getLevel() == World.level do
+    level_top = level_top:getParent()
   end
-  World.room:win()
-  return true
+  local won, winnable = level_top:checkWin()
+  if won and winnable then
+    World.level:win()
+    return true
+  end
 end
 
 function Game:getTransform()

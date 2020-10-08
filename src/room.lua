@@ -97,6 +97,7 @@ function Room:enter(tile, dir)
   World:changeRoom(self)
   if tile.parent and tile.parent:getLayer() < self:getLayer() then
     if not World.level_exits[self:getLevel()] then
+      print("new exit!")
       World.level_exits[self:getLevel()] = {
         player = tile.id,
         exit = self.exit and self.exit.id or nil,
@@ -375,6 +376,71 @@ function Room:getParadoxEntry(tile)
   end
 end
 
+function Room:checkWin(recursed)
+  recursed = recursed or {}
+  recursed[self] = true
+  local tiles = self:getTilesByName("tile")
+  local has_anything = false
+  local won = true
+  if #tiles > 0 then
+    has_anything = true
+    local any_won, any_unwon = false, false
+    for _,tile in ipairs(tiles) do
+      if tile:getActivated() then
+        any_won = true
+      else
+        any_unwon = true
+        break
+      end
+    end
+    won = any_won and not any_unwon
+  end
+  local rooms = self:getTilesByName("room")
+  if won and #rooms > 0 then
+    for _,tile in ipairs(rooms) do
+      if World:getLevel(tile.room_key) == self:getLevel() then
+        if tile.room then
+          if not recursed[tile.room] then
+            local new_won, new_any = tile.room:checkWin(Utils.copy(recursed))
+            won = won and new_won
+            has_anything = has_anything or new_any
+          end
+        elseif World.room_winnable[tile.room_key] then
+          won = false
+          has_anything = true
+        end
+        if not won then
+          return false, has_anything
+        end
+      end
+    end
+  end
+  return won, has_anything
+end
+
+function Room:isWinnable(recursed)
+  if World.room_winnable[self.key] ~= nil then
+    return World.room_winnable[self.key]
+  end
+  recursed = recursed or {}
+  recursed[self.key] = true
+  if #self:getTilesByName("tile") > 0 then
+    World.room_winnable[self.key] = true
+    return true
+  end
+  for _,tile in ipairs(self:getTilesByName("room")) do
+    if not recursed[tile.room_key] and World:getLevel(tile.room_key) == self:getLevel() then
+      local room = World:getRoom(tile.room_key)
+      if room:isWinnable(Utils.copy(recursed)) then
+        World.room_winnable[self.key] = true
+        return true
+      end
+    end
+  end
+  World.room_winnable[self.key] = false
+  return false
+end
+
 function Room:win()
   self:getLevel().won = true
   local info = World.level_exits[self:getLevel()]
@@ -447,6 +513,7 @@ function Room:save()
   if self.palette ~= "default" then
     data.palette = self.palette
   end
+  data.winnable = self:isWinnable()
   if self.paradox then data.paradox = self.paradox end
   data.paradox_key = self.paradox_key
   data.non_paradox_key = self.non_paradox_key

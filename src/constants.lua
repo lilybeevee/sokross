@@ -56,6 +56,7 @@ DEFAULT_RULES = {
   {"tile", "flat"},
 }
 
+SOLID_EFFECTS = {"stop", "push"}
 TILE_ACTIVATORS = {"box", "crate", "flof", "flag", "fork", "key", "ladder", "room", "rule", "wall"}
 
 

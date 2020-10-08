@@ -11,7 +11,6 @@ function World:newLevel(name)
   self.main = self.level
 
   self:traverse(self.main.start)
-  self:spawnPlayer()
 end
 
 function World:clear()
@@ -33,6 +32,7 @@ function World:clear()
   self.rooms_by_key = {}
   self.persists = {}
   self.persists_in_room = {}
+  self.room_winnable = {}
   self.teles = {}
   self.level_exits = {}
 
@@ -47,19 +47,57 @@ end
 
 function World:spawnPlayer()
   if not World.static then
-    self.room:addTile(Tile(self.level.player, self.room:getEntry()))
+    return self.room:addTile(Tile(self.level.player, self.room:getEntry()))
   end
 end
 
 function World:traverse(rooms)
   self:changeRoom(self.main.root, #rooms > 0)
+  World.level_exits[self.main] = {layer = 1}
+  local player = self:spawnPlayer()
   for i,key in ipairs(rooms) do
     for _,tile in ipairs(self.room.tiles_by_name["room"] or {}) do
       if tile.key == key then
         local room = self:getRoom(tile.room_key)
         tile.room = room
         room.exit = tile
-        self:changeRoom(room, i ~= #rooms)
+
+        if not World.static then
+          local best_dir = 0
+          local best_empty = false
+          for i = 4,1,-1 do
+            local dir = Dir.rotateCW(i)
+            local ox, oy = Dir.toPos(dir)
+            if self.room:inBounds(tile.x - ox, tile.y - oy) then
+              local stopped = false
+              local empty = true
+              for _,other in ipairs(self.room:getTilesAt(tile.x - ox, tile.y - oy)) do
+                empty = false
+                for _,effect in ipairs(SOLID_EFFECTS) do
+                  if other:hasRule(effect) then
+                    stopped = true
+                    break
+                  end
+                end
+              end
+              if not stopped and (best_dir == 0 or (not best_empty and empty)) then
+                best_dir = dir
+                best_empty = empty
+              end
+            end
+          end
+          local ox, oy = Dir.toPos(best_dir)
+          player:setPos(tile.x - ox, tile.y - oy, self.room)
+          player.dir = best_dir
+          room:enter(player, best_dir)
+          if i == #rooms then
+            local x, y = room:getEntry()
+            player:setPos(x, y, room)
+            player.dir = 1
+          end
+        else
+          self:changeRoom(room, i ~= #rooms)
+        end
         break
       end
     end
@@ -156,6 +194,7 @@ function World:save()
     love.filesystem.write(dir.."/level.json", JSON.encode(level:save()))
   end
 
+  self.room_winnable = {}
   for key,room in pairs(self.rooms) do
     local levelkey, roomkey = unpack(key:split(":"))
     local dir = table.concat({"levels", unpack(self.levels[levelkey].path)}, "/")
@@ -178,7 +217,6 @@ function World:load(name)
     self.level = self.main
 
     self:traverse(self.main.start)
-    self:spawnPlayer()
   end
 end
 
@@ -198,6 +236,7 @@ function World:loadLevel(path)
       local roomdata = Utils.loadTable(loadstr)
       self.has_room[roomdata.key] = true
       self.persists_in_room[roomdata.key] = {}
+      self.room_winnable[roomdata.key] = roomdata.winnable or false
       table.insert(level.rooms, roomdata.key)
 
     elseif info.type == "directory" then

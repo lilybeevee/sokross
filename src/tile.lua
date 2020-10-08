@@ -282,6 +282,19 @@ function Tile:moveTo(x, y, room, dir, ignore_persist)
   end
 end
 
+function Tile:setPos(x, y, room)
+  if room and room ~= self.parent then
+    self.parent:removeTile(self, true)
+    self.x, self.y = x, y
+    room:addTile(self, true)
+  else
+    Utils.removeFromTable(self.parent.tiles_by_pos[self.x..","..self.y], self)
+    self.x, self.y = x, y
+    self.parent.tiles_by_pos[self.x..","..self.y] = self.parent.tiles_by_pos[self.x..","..self.y] or {}
+    table.insert(self.parent.tiles_by_pos[self.x..","..self.y], self)
+  end
+end
+
 function Tile:rotate(dir, ignore_persist)
   if self.dir ~= dir then
     Undo:add("rotate", self.id, self.dir)
