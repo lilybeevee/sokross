@@ -24,10 +24,12 @@ Movement = require "src.movement"
 Undo = require "src.undo"
 
 function love.load()
-  print("Sokoma? What's that Fuck this joke doesnt work anymore")
+  print("Current version: "..VERSION)
 
   love.graphics.setDefaultFilter("nearest","nearest")
   Assets.load()
   Gamestate.registerEvents()
   Gamestate.switch(Editor)
+
+  love.filesystem.createDirectory("levels")
 end

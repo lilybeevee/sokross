@@ -3,8 +3,6 @@ local Game = {}
 Game.sound = {}
 
 function Game:enter()
-  print("Sokoma game")
-
   Undo:clear()
 
   self.turn = 0
@@ -38,7 +36,9 @@ function Game:keypressed(key)
       self.move_timer = 0
     end
   end
-  if key == "z" then
+  if key == "f" and love.keyboard.isDown("ctrl") then
+    love.system.openURL("file://"..love.filesystem.getSaveDirectory().."/levels")
+  elseif key == "z" then
     self.undoing = true
   elseif key == "r" then
     World:smallReset()

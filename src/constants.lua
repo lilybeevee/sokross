@@ -1,3 +1,5 @@
+VERSION = "0.1.0"
+
 TILE_SIZE = 24
 KEY_REPEAT = 0.21
 

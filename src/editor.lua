@@ -1,8 +1,6 @@
 local Editor = {}
 
 function Editor:enter()
-  print("Sokoma editor")
-
   self.font = love.graphics.newFont(46)
 
   World.static = true
@@ -129,6 +127,8 @@ function Editor:keypressed(key)
   local right = key == "d" or key == "right"
   if key == "tab" then
     self:openTileSelector()
+  elseif key == "f" and love.keyboard.isDown("ctrl") then
+    love.system.openURL("file://"..love.filesystem.getSaveDirectory().."/levels")
   elseif key == "s" and love.keyboard.isDown("ctrl") then
     if World.new or love.keyboard.isDown("shift") then
       Gamestate.push(TextInput, "New level name:", not World.new and World.main.name or "", function(text)
