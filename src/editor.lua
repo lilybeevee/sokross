@@ -242,7 +242,7 @@ function Editor:keypressed(key)
       self.brush.persist = not self.brush.persist
     end
   elseif key == "l" then
-    if self.brush and self.brush.name == "room" or self.brush.name == "line" then
+    if self.brush and (self.brush.name == "room" or self.brush.name == "line") then
       self.brush.locked = not self.brush.locked
     end
   elseif key == "i" then
