@@ -264,13 +264,13 @@ function Movement.canMove(tile, dir, o)
               entered = true
             end
           end
-        elseif is_entry and not success and moveable then
+        --[[elseif is_entry and not success and moveable then
           local new_movers, new_effects
           success, new_movers, new_effects = Movement.canMove(other, Dir.reverse(dir), {x=x, y=y, room=room, reason = is_ladder and "exit" or "enter", enter = true, pushing = o.pushing})
           if success then
             Utils.merge(movers, new_movers)
             Utils.merge(effects, new_effects)
-          end
+          end]]
         end
         if not success then
           return false, {}, {}
