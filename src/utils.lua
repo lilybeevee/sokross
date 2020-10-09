@@ -290,7 +290,7 @@ end
 
 function Utils.toFileName(str)
   str = str:trim()
-  str = str:gsub("[%p%c]", "")
+  str = str:gsub("[^%w_ ]", "")
   str = str:lower()
   return str
 end
