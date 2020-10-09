@@ -74,11 +74,13 @@ function Room:getParent()
   return self.exit and self.exit.parent
 end
 
-function Room:getLayer()
-  if not self:getParent() then
+function Room:getLayer(recursed)
+  recursed = recursed or {}
+  recursed[self] = true
+  if not self:getParent() or recursed[self:getParent()] then
     return 1
   else
-    return self:getParent():getLayer() + 1
+    return self:getParent():getLayer(Utils.copy(recursed)) + 1
   end
 end
 

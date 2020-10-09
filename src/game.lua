@@ -258,8 +258,10 @@ end
 
 function Game:checkWin()
   local level_top = World.room
-  while level_top:getParent() and level_top:getParent():getLevel() == World.level do
+  local recursed = {[World.room] = true}
+  while level_top:getParent() and not recursed[level_top:getParent()] and level_top:getParent():getLevel() == World.level do
     level_top = level_top:getParent()
+    recursed[level_top] = true
   end
   local won, winnable = level_top:checkWin()
   if won and winnable then
