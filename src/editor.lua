@@ -414,7 +414,7 @@ function Editor:selectTileActivator(maintile)
     table.insert(tiles, Tile("tile", 0, 0, {activator = activator, parent = World.room}))
   end
 
-  Gamestate.push(Selector, tiles, function(tile)
+  Gamestate.push(Selector, 9, tiles, function(tile)
     maintile.activator = tile.activator
   end)
 end
@@ -452,7 +452,7 @@ function Editor:openTileSelector()
     end
   end
 
-  Gamestate.push(Selector, tiles, function(tile)
+  Gamestate.push(Selector, 12, tiles, function(tile)
     self.brush = tile:copy()
   end)
 end

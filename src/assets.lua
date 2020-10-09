@@ -210,8 +210,15 @@ function Assets.addTiles()
       name = "lock",
       sprites = {"door"},
       colors = {{2, 2}},
-      layer = 4,
+      layer = 8,
       property = "shut"
+    },
+    {
+      name = "brick",
+      sprites = {"brick"},
+      colors = {{8, 0}},
+      layer = 8,
+      property = "stop",
     },
     {
       name = "arrow",
@@ -219,6 +226,12 @@ function Assets.addTiles()
       colors = {{4, 3}},
       layer = 3,
       rotate = true,
+    },
+    {
+      name = "object",
+      sprites = {"perfectly_generic_object_front", "perfectly_generic_object_side", "perfectly_generic_object_top"},
+      colors = {{6, 3}, {6, 2}, {6, 4}},
+      layer = 3
     },
     {
       name = "room",
@@ -402,7 +415,19 @@ function Assets.addWords()
       color = 1,
     },
     {
+      name = "brick",
+      type = "noun",
+      color = 0,
+      dark = true,
+    },
+    {
       name = "arrow",
+      type = "noun",
+      color = 6,
+      dark = true,
+    },
+    {
+      name = "object",
       type = "noun",
       color = 6,
       dark = true,

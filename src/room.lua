@@ -42,7 +42,7 @@ function Room:init(width, height, o)
   self.tiles_by_pos = {}
   self.tiles_by_name = {}
   self.tiles_by_layer = {}
-  for i=1,7 do
+  for i=1,8 do
     self.tiles_by_layer[i] = {}
   end
 
@@ -310,7 +310,7 @@ function Room:draw()
     end
   end
 
-  for i=1,7 do
+  for i=1,8 do
     for _,tile in ipairs(self.tiles_by_layer[i]) do
       love.graphics.push()
       love.graphics.translate(tile.x*TILE_SIZE, tile.y*TILE_SIZE)

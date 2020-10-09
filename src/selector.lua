@@ -1,11 +1,11 @@
 local Selector = {}
 
-function Selector:enter(from, list, func)
+function Selector:enter(from, cols, list, func)
   self.from = from
   self.tiles = list
   self.func = func
-  self.width = math.min(#list, 12)
-  self.height = math.floor((#list-1) / 12) + 1
+  self.width = math.min(#list, cols)
+  self.height = math.floor((#list-1) / cols) + 1
   self.grid = 28
 end
 

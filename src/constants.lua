@@ -1,4 +1,4 @@
-VERSION = "0.1.2"
+VERSION = "0.1.3"
 
 TILE_SIZE = 24
 KEY_REPEAT = 0.21
@@ -30,6 +30,7 @@ MOVE_KEYS = {
 DEFAULT_RULES = {
   {"flof", "play"},
   {"wall", "stop"},
+  {"brick", "stop"},
   {"box", "push"},
   {"crate", "push"},
   {"crate", "heavy"},
@@ -59,7 +60,7 @@ DEFAULT_RULES = {
 }
 
 SOLID_EFFECTS = {"stop", "push"}
-TILE_ACTIVATORS = {"box", "crate", "flof", "flag", "fork", "key", "ladder", "room", "rule", "wall"}
+TILE_ACTIVATORS = {"box", "crate", "flof", "flag", "fork", "key", "arrow", "object", "ladder", "room", "rule", "wall"}
 
 
 TILE_CANVAS = love.graphics.newCanvas(TILE_SIZE*4, TILE_SIZE*4)
