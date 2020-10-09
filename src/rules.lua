@@ -164,7 +164,7 @@ function Rules:applyNot()
     if layer == 1 then
       local to_remove = {}
       for i,rule in ipairs(lower) do
-        if self.not_rules[layer][rule.target..","..rule.effect] then
+        if self.not_rules[layer] and self.not_rules[layer][rule.target..","..rule.effect] then
           table.insert(to_remove, i)
         end
       end
