@@ -178,7 +178,7 @@ function Room:removeTile(tile, ignore_persist)
   Utils.removeFromTable(self.tiles_by_pos[tile.x..","..tile.y], tile)
   Utils.removeFromTable(self.tiles_by_name[tile.name], tile)
   Utils.removeFromTable(self.tiles_by_layer[tile.layer], tile)
-  if tile.word then
+  if tile.word and not World.static then
     Game.parse_room[self] = true
   end
   if tile.persist and not World.static then
