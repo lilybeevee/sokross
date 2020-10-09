@@ -61,7 +61,7 @@ function Undo:doUndo(undo)
 
     local tile = World.tiles_by_id[tileid]
 
-    tile:rotate(dir)
+    tile:rotate(dir, true)
   elseif action == "remove" then
     local tiledata, roomid = undo[2], undo[3]
 

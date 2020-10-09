@@ -317,8 +317,8 @@ function Tile:updatePersistence()
       World.persists[self.key] = self:save()
       for _,tile in ipairs(World.tiles_by_key[self.key] or {}) do
         if tile ~= self then
-          tile:moveTo(self.x, self.y, nil, self.dir, true)
           tile:rotate(self.dir, true)
+          tile:moveTo(self.x, self.y, nil, self.dir, true)
           tile.locked = self.locked
           if tile.word then
             Game.parse_room[tile.parent] = true

@@ -178,6 +178,9 @@ function Room:removeTile(tile, ignore_persist)
   Utils.removeFromTable(self.tiles_by_pos[tile.x..","..tile.y], tile)
   Utils.removeFromTable(self.tiles_by_name[tile.name], tile)
   Utils.removeFromTable(self.tiles_by_layer[tile.layer], tile)
+  if tile.word then
+    Game.parse_room[self] = true
+  end
   if tile.persist and not World.static then
     Utils.removeFromTable(World.persists_in_room[self.key], tile.key)
 
@@ -189,7 +192,6 @@ function Room:removeTile(tile, ignore_persist)
         end
       end
       for _,linked in ipairs(to_remove) do
-        Game.parse_room[linked.parent] = true
         Undo:add("remove", linked:save(true), linked.parent.id)
         linked.parent:removeTile(linked, true)
       end

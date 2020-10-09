@@ -66,10 +66,10 @@ function Movement.move(moves)
         if mover.x ~= mover.tile.x or mover.y ~= mover.tile.y or mover.room ~= mover.tile.parent then
           has_moved[mover.tile] = true
         end
-        mover.tile:moveTo(mover.x, mover.y, mover.room, mover.dir)
         if mover.vdir then
           mover.tile:rotate(mover.vdir)
         end
+        mover.tile:moveTo(mover.x, mover.y, mover.room, mover.dir)
         if mover.tile.icy then
           move_done = false
           table.insert(still_moving, {tile = mover.tile, dir = mover.dir})
