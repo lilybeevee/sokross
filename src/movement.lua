@@ -136,7 +136,7 @@ function Movement.canMove(tile, dir, o)
   local already_entered = o.already_entered or {}
   local ignored = o.ignored or {}
 
-  local current_mover = {moved = true, tile = tile, x = x, y = y, dir = dir, vdir = vdir, room = room, reason = o.reason or "unknown"}
+  local current_mover = {moved = true, tile = tile, x = x, y = y, prevx = prevx, prevy = prevy, dir = dir, vdir = vdir, room = room, reason = o.reason or "unknown"}
   local movers = {}
   local effects = {}
 
@@ -144,7 +144,7 @@ function Movement.canMove(tile, dir, o)
     return false, {}, {}
   end
 
-  local holding = tile:getHolding(o.reason == "hold")
+  local holding = tile:getHolding(o.reason == "hold", prevx, prevy)
   local all_holding = {}
 
   if o.reason ~= "hold" and #holding > 0 then
@@ -157,7 +157,8 @@ function Movement.canMove(tile, dir, o)
       local success, new_movers, new_effects = true, {}, {}
       local mx, my, pdir, vdir
       if straight then
-        success, new_movers, new_effects = Movement.canMove(held, dir, {vdir = tile.dir, reason = "hold", pushing = true, ignored = {[holder] = true}})
+        local mx, my = Vector.add(prevx, prevy, Vector.mul(offset, Dir.toPos(tile.dir)))
+        success, new_movers, new_effects = Movement.canMove(held, dir, {vdir = tile.dir, x = mx, y = my, reason = "hold", pushing = true, ignored = {[holder] = true}})
       else
         local mx, my = Vector.add(prevx, prevy, Vector.mul(offset, Dir.toPos(dir)))
         local pushdir

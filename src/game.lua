@@ -74,7 +74,7 @@ function Game:update(dt)
       self.undo_timer_mult = math.min(3, self.undo_timer_mult + 0.1)
       Undo:back()
       self:reparse()
-      World.room:updateTiles(true)
+      self:updateTiles(true)
     end
   else
     self.undo_timer = 0
@@ -250,9 +250,9 @@ function Game:doTransitions()
   self.update_room = full_update_room
 end
 
-function Game:updateTiles()
+function Game:updateTiles(small)
   for room,_ in pairs(self.update_room) do
-    room:updateTiles()
+    room:updateTiles(small)
   end
 end
 

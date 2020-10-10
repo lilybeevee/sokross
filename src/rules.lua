@@ -161,19 +161,21 @@ function Rules:applyNot()
       lower = self.not_rules[layer - 1]
     end
 
-    if layer == 1 then
-      local to_remove = {}
-      for i,rule in ipairs(lower) do
-        if self.not_rules[layer] and self.not_rules[layer][rule.target..","..rule.effect] then
-          table.insert(to_remove, i)
+    if self.not_rules[layer] then
+      if layer == 1 then
+        local to_remove = {}
+        for i,rule in ipairs(lower) do
+          if self.not_rules[layer][rule.target..","..rule.effect] then
+            table.insert(to_remove, i)
+          end
         end
-      end
-      for i,index in ipairs(to_remove) do
-        table.remove(lower, index-i+1)
-      end
-    elseif self.not_rules[layer - 1] then
-      for name,_ in pairs(self.not_rules[layer]) do
-        self.not_rules[layer - 1][name] = nil
+        for i,index in ipairs(to_remove) do
+          table.remove(lower, index-i+1)
+        end
+      elseif self.not_rules[layer - 1] then
+        for name,_ in pairs(self.not_rules[layer]) do
+          self.not_rules[layer - 1][name] = nil
+        end
       end
     end
 

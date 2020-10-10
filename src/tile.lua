@@ -172,7 +172,7 @@ function Tile:update(small)
     if other ~= self then
       -- not self
       if other:hasRule("tele") then
-        has_tele = true
+        has_tele = other.id
       end
     end
   end
@@ -181,6 +181,8 @@ function Tile:update(small)
   end
   if has_tele then
     World.teles[self.id] = true
+    World.teles_by[has_tele] = World.teles_by[has_tele] or {}
+    table.insert(World.teles_by[has_tele], self.id)
   else
     World.teles[self.id] = nil
   end
@@ -214,16 +216,24 @@ function Tile:remove(ignore_save)
     if self.savepoint and not ignore_save then
       local save = World.tiles_by_id[self.savepoint]
       --local new_self = Tile(self.name, save.x, save.y, {dir = self.dir, word = self.word and self.word.name or nil, icy = self.icy})
-      local save_data = self:save(true)
-      save_data.id = nil
-      local new_self = Tile.load(save_data)
-      new_self.x = save.x
-      new_self.y = save.y
-      save.parent:addTile(new_self)
-      Undo:add("add", new_self.id)
+      if save then
+        local save_data = self:save(true)
+        save_data.id = nil
+        local new_self = Tile.load(save_data)
+        new_self.x = save.x
+        new_self.y = save.y
+        save.parent:addTile(new_self)
+        Undo:add("add", new_self.id)
+      end
     end
     World.tiles_by_id[self.id] = nil
     World.teles[self.id] = nil
+    if World.teles_by[self.id] then
+      for _,id in ipairs(World.teles_by[self.id]) do
+        World.teles[id] = nil
+      end
+      World.teles_by[self.id] = nil
+    end
   end
   Utils.removeFromTable(World.tiles_by_key[self.key], self)
 end
@@ -231,6 +241,19 @@ end
 function Tile:add()
   if not World.static then
     World.tiles_by_id[self.id] = self
+
+    if World.room and World.room ~= self.parent and self:hasRule("play") then
+      local move_needed = true
+      for _,rule in ipairs(World.room:getRules(nil, "play")) do
+        if #World.room:getTilesByName(rule.target) > 0 then
+          move_needed = false
+          break
+        end
+      end
+      if move_needed then
+        World:changeRoom(self.parent)
+      end
+    end
   end
   World.tiles_by_key[self.key] = World.tiles_by_key[self.key] or {}
   table.insert(World.tiles_by_key[self.key], self)
@@ -261,7 +284,7 @@ function Tile:moveTo(x, y, room, dir, ignore_persist)
     if self.persist and not ignore_persist then
       Undo:add("remove", self:save(true), self.parent.id)
       Undo:add("update_persist", self.key, World.persists[self.key])
-      self.parent:removeTile(self, ignore_persist)
+      self.parent:removeTile(self, ignore_persist, true)
       self.x, self.y = x, y
       World.persists[self.key] = self:save()
       if not (last_parent:getParent() ~= last_parent_parent and last_parent.key == room.key) then -- only fails for a persistent room exiting itself
@@ -270,7 +293,7 @@ function Tile:moveTo(x, y, room, dir, ignore_persist)
         room:addTile(tile, ignore_persist)
       end
     else
-      self.parent:removeTile(self, ignore_persist)
+      self.parent:removeTile(self, ignore_persist, true)
       self.x, self.y = x, y
       Undo:add("move", unpack(undo_move_args))
       room:addTile(self, ignore_persist)
@@ -402,7 +425,7 @@ function Tile:getActivated()
   return false
 end
 
-function Tile:draw(palette, alpha)
+function Tile:draw(palette, alpha, recursed)
   Utils.pushCanvas(TILE_CANVAS)
   love.graphics.clear()
   love.graphics.origin()
@@ -548,7 +571,7 @@ function Tile:draw(palette, alpha)
   love.graphics.draw(TILE_CANVAS, -TILE_CANVAS:getWidth()/2, -TILE_CANVAS:getHeight()/2)
   love.graphics.pop()
 
-  if self.is_tele then
+  if self.is_tele and not recursed then
     Utils.pushCanvas(HOLO_CANVAS)
     love.graphics.clear()
     love.graphics.origin()
@@ -556,7 +579,7 @@ function Tile:draw(palette, alpha)
 
     for id,_ in pairs(World.teles) do
       if World.tiles_by_id[id] then
-        World.tiles_by_id[id]:draw(palette)
+        World.tiles_by_id[id]:draw(palette, 1, true)
       end
     end
 

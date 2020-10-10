@@ -59,7 +59,7 @@ function Room:remove()
     end
   end
   for _,tile in ipairs(self.tiles) do
-    tile:remove()
+    tile:remove(true)
   end
   if self.exit then
     self.exit.room = nil
@@ -175,7 +175,7 @@ function Room:addTile(tile, ignore_persist)
   return tile
 end
 
-function Room:removeTile(tile, ignore_persist)
+function Room:removeTile(tile, ignore_persist, ignore_save)
   Utils.removeFromTable(self.tiles, tile)
   Utils.removeFromTable(self.tiles_by_pos[tile.x..","..tile.y], tile)
   Utils.removeFromTable(self.tiles_by_name[tile.name], tile)
@@ -195,11 +195,11 @@ function Room:removeTile(tile, ignore_persist)
       end
       for _,linked in ipairs(to_remove) do
         Undo:add("remove", linked:save(true), linked.parent.id)
-        linked.parent:removeTile(linked, true)
+        linked.parent:removeTile(linked, true, true)
       end
     end
   end
-  tile:remove(ignore_persist)
+  tile:remove(ignore_save)
   tile.parent = nil
 end
 

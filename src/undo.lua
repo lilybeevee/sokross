@@ -79,7 +79,7 @@ function Undo:doUndo(undo)
     local tile = World.tiles_by_id[tileid]
     local room = tile.parent
 
-    room:removeTile(tile, true)
+    room:removeTile(tile, true, true)
 
     if tile.word then
       Game.parse_room[room] = true
