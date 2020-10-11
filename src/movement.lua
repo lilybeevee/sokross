@@ -106,7 +106,7 @@ function Movement.move(moves)
         local copy_rules = mover.tile.parent:getRules(nil, "copy")
         for _,rule in ipairs(copy_rules) do
           for _,tile in ipairs(mover.tile.parent:getTilesByName(rule.target)) do
-            if tile ~= mover.tile and math.abs(tile.x - mover.tile.x) <= 1 and math.abs(tile.y - mover.tile.y) <= 1 then
+            if tile.tile ~= mover.tile.tile and math.abs(tile.x - mover.tile.x) <= 1 and math.abs(tile.y - mover.tile.y) <= 1 then
               copied[tile] = copied[tile] or {}
               if not Utils.contains(copied[tile], mover.tile) then
                 table.insert(copied[tile], mover.tile)
