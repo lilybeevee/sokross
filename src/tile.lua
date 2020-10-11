@@ -260,6 +260,10 @@ function Tile:add()
         World:changeRoom(self.parent)
       end
     end
+
+    if self.room then
+      self.room.exit = self
+    end
   end
   World.tiles_by_key[self.key] = World.tiles_by_key[self.key] or {}
   table.insert(World.tiles_by_key[self.key], self)
