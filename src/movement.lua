@@ -134,6 +134,8 @@ function Movement.move(moves)
       tile.walk_frame = not tile.walk_frame
     end
   end
+  
+  Game:handleDels(to_destroy)
 
   for copier,copied in pairs(copied) do
     if copier.parent then
@@ -152,8 +154,6 @@ function Movement.move(moves)
       end
     end
   end
-  
-  Game:handleDels(to_destroy)
 end
 
 function Movement.canMove(tile, dir, o)

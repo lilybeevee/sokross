@@ -186,9 +186,24 @@ function Tile:update(small)
     self.belt_start = nil
   end
   if has_tele then
-    World.teles[self.id] = true
-    World.teles_by[has_tele] = World.teles_by[has_tele] or {}
-    table.insert(World.teles_by[has_tele], self.id)
+    local ignored = false
+    if self.persist then
+      local compare = {}
+      for _,tile in ipairs(World.tiles_by_key[self.key]) do
+        compare[tile.id] = true
+      end
+      for id,_ in pairs(World.teles) do
+        if compare[id] then
+          ignored = true
+          break
+        end
+      end
+    end
+    if not ignored then
+      World.teles[self.id] = true
+      World.teles_by[has_tele] = World.teles_by[has_tele] or {}
+      table.insert(World.teles_by[has_tele], self.id)
+    end
   else
     World.teles[self.id] = nil
   end
@@ -301,6 +316,8 @@ function Tile:moveTo(x, y, room, dir, ignore_persist)
         local tile = Tile.load(World.persists[self.key])
         Undo:add("add", tile.id)
         room:addTile(tile, ignore_persist)
+      else
+        Game.sound["paradox push"] = true
       end
     else
       self.parent:removeTile(self, ignore_persist, true)

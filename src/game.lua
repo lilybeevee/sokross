@@ -127,10 +127,10 @@ function Game:playSounds()
     Assets.playSound("enter")
   elseif self.sound["exit"] then
     Assets.playSound("exit")
+  elseif self.sound["paradox push"] then
+    Assets.playSound("paradox push")
   elseif self.sound["push"] then
-    if self.sound["paradox push"] then
-      Assets.playSound("paradox push")
-    elseif self.sound["click"] or self.sound["unclick"] then
+    if self.sound["click"] or self.sound["unclick"] then
       Assets.playSound("push", 0.75)
     else
       Assets.playSound("push")
