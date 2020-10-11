@@ -23,6 +23,7 @@ function Movement.move(moves)
 
   local move_done = false
   local to_destroy = {}
+  local copied = {}
   while #moves > 0 and not move_done do
     move_done = true
 
@@ -94,6 +95,20 @@ function Movement.move(moves)
       for _,new in ipairs(new_moves) do
         table.insert(still_moving, new)
       end
+
+      if has_pushed[mover.tile] and mover.tile.parent then
+        local copy_rules = mover.tile.parent:getRules(nil, "copy")
+        for _,rule in ipairs(copy_rules) do
+          for _,tile in ipairs(mover.tile.parent:getTilesByName(rule.target)) do
+            if tile ~= mover.tile and math.abs(tile.x - mover.tile.x) <= 1 and math.abs(tile.y - mover.tile.y) <= 1 then
+              copied[tile] = copied[tile] or {}
+              if not Utils.contains(copied[tile], mover.tile) then
+                table.insert(copied[tile], mover.tile)
+              end
+            end
+          end
+        end
+      end
     end
     for _,effect in ipairs(effects) do
       local name = effect[1]
@@ -114,28 +129,21 @@ function Movement.move(moves)
     end
   end
 
-  local copied = {}
-  for pushed,_ in pairs(has_pushed) do
-    local copy_rules = pushed.parent:getRules(nil, "copy")
-    for _,rule in ipairs(copy_rules) do
-      for _,tile in ipairs(pushed.parent:getTilesByName(rule.target)) do
-        if tile ~= pushed and math.abs(tile.x - pushed.x) <= 1 and math.abs(tile.y - pushed.y) <= 1 then
-          copied[tile] = copied[tile] or {}
-          table.insert(copied[tile], pushed:save(false, true))
-        end
-      end
-    end
-  end
   for copier,copied in pairs(copied) do
-    local x, y, room = copier.x, copier.y, copier.parent
-    Undo:add("remove", copier:save(true), room.id)
-    room:removeTile(copier)
-    for _,data in ipairs(copied) do
-      local tile = Tile.load(data)
-      tile.x = x
-      tile.y = y
-      room:addTile(tile)
-      Undo:add("add", tile.id)
+    if copier.parent then
+      local x, y, room = copier.x, copier.y, copier.parent
+      Undo:add("remove", copier:save(true), room.id)
+      room:removeTile(copier)
+      for i,target in ipairs(copied) do
+        local data = target:save(false, true)
+        data.key = nil
+        data.persist = copier.persist
+        local tile = Tile.load(data)
+        tile.x = x
+        tile.y = y
+        room:addTile(tile)
+        Undo:add("add", tile.id)
+      end
     end
   end
   
