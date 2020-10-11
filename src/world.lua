@@ -310,7 +310,7 @@ end
 
 function World:getHeaven()
   if not self.heaven_key then
-    local room = Room(9, 5, {heaven = true, static = true})
+    local room = Room(9, 5, {heaven = true, palette = "heaven", static = true})
     self.heaven_key = self:addRoom(room, self.main)
     room:addTile(Tile("tile", 6, 2, {activator = self.player}))
   end
