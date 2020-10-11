@@ -44,6 +44,7 @@ function Movement.move(moves)
       end
     end
 
+    local icy_moving = {}
     for _,mover in ipairs(movers) do
       if mover.tile.parent then
         if mover.tile.word then
@@ -77,7 +78,8 @@ function Movement.move(moves)
         mover.tile:moveTo(mover.x, mover.y, mover.room, mover.dir)
         if mover.tile.icy then
           move_done = false
-          table.insert(still_moving, {tile = mover.tile, dir = mover.dir})
+          icy_moving[mover.tile] = {tile = mover.tile, dir = mover.dir}
+          table.insert(still_moving, icy_moving[mover.tile])
         end
       end
     end
@@ -94,6 +96,10 @@ function Movement.move(moves)
       end
       for _,new in ipairs(new_moves) do
         table.insert(still_moving, new)
+        if icy_moving[mover.tile] then
+          Utils.removeFromTable(still_moving, icy_moving[mover.tile])
+          icy_moving[mover.tile] = nil
+        end
       end
 
       if has_pushed[mover.tile] and mover.tile.parent then
