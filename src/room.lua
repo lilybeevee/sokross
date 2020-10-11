@@ -194,7 +194,6 @@ function Room:removeTile(tile, ignore_persist, ignore_save)
         end
       end
       for _,linked in ipairs(to_remove) do
-        print("Hecking off")
         Undo:add("remove", linked:save(true), linked.parent.id)
         linked.parent:removeTile(linked, true, true)
       end
