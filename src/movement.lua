@@ -15,6 +15,7 @@ function Movement.move(moves)
 
   moves = moves or {}
   local has_moved = {}
+  local has_pushed = {}
 
   local playsound_push = false
   local playsound_enter = false
@@ -65,6 +66,9 @@ function Movement.move(moves)
 
         if mover.x ~= mover.tile.x or mover.y ~= mover.tile.y or mover.room ~= mover.tile.parent then
           has_moved[mover.tile] = true
+          if mover.reason == "push" then
+            has_pushed[mover.tile] = true
+          end
         end
         if mover.vdir then
           mover.tile:rotate(mover.vdir)
@@ -107,6 +111,31 @@ function Movement.move(moves)
   for tile,_ in pairs(has_moved) do
     if tile.tile.walk then
       tile.walk_frame = not tile.walk_frame
+    end
+  end
+
+  local copied = {}
+  for pushed,_ in pairs(has_pushed) do
+    local copy_rules = pushed.parent:getRules(nil, "copy")
+    for _,rule in ipairs(copy_rules) do
+      for _,tile in ipairs(pushed.parent:getTilesByName(rule.target)) do
+        if tile ~= pushed and math.abs(tile.x - pushed.x) <= 1 and math.abs(tile.y - pushed.y) <= 1 then
+          copied[tile] = copied[tile] or {}
+          table.insert(copied[tile], pushed:save(false, true))
+        end
+      end
+    end
+  end
+  for copier,copied in pairs(copied) do
+    local x, y, room = copier.x, copier.y, copier.parent
+    Undo:add("remove", copier:save(true), room.id)
+    room:removeTile(copier)
+    for _,data in ipairs(copied) do
+      local tile = Tile.load(data)
+      tile.x = x
+      tile.y = y
+      room:addTile(tile)
+      Undo:add("add", tile.id)
     end
   end
   

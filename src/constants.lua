@@ -1,4 +1,4 @@
-VERSION = "0.1.6"
+VERSION = "0.2.0-dev"
 
 TILE_SIZE = 24
 KEY_REPEAT = 0.21
@@ -53,6 +53,8 @@ DEFAULT_RULES = {
   {"key", "push"},
   {"lock", "shut"},
   {"lock", "stop"},
+  {"hex", "copy"},
+  {"hex", "push"},
   {"room", "push"},
   {"rule", "push"},
   {"line", "flat"},

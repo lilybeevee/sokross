@@ -214,11 +214,17 @@ function Assets.addTiles()
       property = "shut"
     },
     {
+      name = "hex",
+      sprites = {"hex"},
+      colors = {{2, 3}},
+      layer = 3,
+      property = "copy"
+    },
+    {
       name = "brick",
       sprites = {"brick"},
       colors = {{8, 0}},
       layer = 8,
-      property = "stop",
     },
     {
       name = "arrow",
@@ -415,6 +421,16 @@ function Assets.addWords()
       color = 1,
     },
     {
+      name = "hex",
+      type = "noun",
+      color = 2,
+    },
+    {
+      name = "copy",
+      type = "prop",
+      color = 6,
+    },
+    {
       name = "brick",
       type = "noun",
       color = 0,
@@ -423,7 +439,7 @@ function Assets.addWords()
     {
       name = "arrow",
       type = "noun",
-      color = 6,
+      color = 7,
       dark = true,
     },
     {

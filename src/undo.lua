@@ -91,7 +91,9 @@ function Undo:doUndo(undo)
     local exit = World.tiles_by_id[exitid]
 
     room:remove()
-    exit.room = nil
+    if exit then
+      exit.room = nil
+    end
   elseif action == "create_paradox" then
     local roomid, baseid = undo[2], undo[3]
 

@@ -63,6 +63,12 @@ function Tile:init(name, x, y, o)
   self.active_sides = {false, false, false, false} -- for side connections
   self.activated = false -- for tiles and rooms
   self.is_tele = false
+
+  if not self.room and o.room_data then
+    self.room = Room.load(o.room_data)
+    self.room.exit = self
+    Undo:add("create_room", self.room.id, self.id)
+  end
 end
 
 function Tile:updateVisuals()
@@ -618,7 +624,7 @@ function Tile:copy()
   return tile
 end
 
-function Tile:save(instance)
+function Tile:save(instance, clone)
   local data = {}
 
   data.name = self.name
@@ -646,6 +652,10 @@ function Tile:save(instance)
     if self.room then
       data.room_id = self.room.id
     end
+  elseif clone then
+    if self.room then
+      data.room_data = self.room:save(true)
+    end
   end
 
   return data
@@ -664,6 +674,7 @@ function Tile.load(data)
     sides = data.sides,
     room = room,
     room_key = data.room,
+    room_data = data.room_data,
     activator = data.activator,
     locked = data.locked,
     persist = data.persist,

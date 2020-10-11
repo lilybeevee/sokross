@@ -503,10 +503,10 @@ function Room:win()
   end]]
 end
 
-function Room:save()
+function Room:save(clone)
   local tiles = {}
   for _,tile in ipairs(self.tiles) do
-    table.insert(tiles, tile:save())
+    table.insert(tiles, tile:save(false, clone))
   end
 
   local data = {}
