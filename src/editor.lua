@@ -100,7 +100,7 @@ function Editor:buildRoomTree()
   for _,key in ipairs(World.main.start) do
     for _,tile in ipairs(current_room.tiles_by_name["room"] or {}) do
       if tile.key == key then
-        table.insert(self.room_tree, tile)
+        table.insert(self.room_tree, {tile, tile.parent.key})
         current_room = World:getRoom(tile.room_key)
         break
       end
@@ -231,7 +231,7 @@ function Editor:keypressed(key)
       if not World.room.paradox then
         World.main.start = {}
         for _,tile in ipairs(self.room_tree) do
-          table.insert(World.main.start, tile.key)
+          table.insert(World.main.start, tile[1].key)
         end
       end
     else
@@ -251,7 +251,7 @@ function Editor:keypressed(key)
     end
   elseif key == "escape" then
     if #self.room_tree > 0 then
-      World:changeRoom(table.remove(self.room_tree, #self.room_tree).parent)
+      World:changeRoom(table.remove(self.room_tree, #self.room_tree)[2])
       World.room:updateVisuals()
     end
   elseif key == "return" then
@@ -296,7 +296,7 @@ function Editor:mousepressed(x, y, btn)
         for _,tile in ipairs(tiles) do
           if tile.name == "room" then
             local function enterTile()
-              table.insert(self.room_tree, tile)
+              table.insert(self.room_tree, {tile, World.room.key})
               World:changeRoom(tile.room_key)
               World.room:updateVisuals()
             end
@@ -399,7 +399,7 @@ function Editor:isStart()
     return false
   end
   for i,key in ipairs(World.main.start) do
-    if key ~= self.room_tree[i].key then
+    if key ~= self.room_tree[i][1].key then
       return false
     end
   end
