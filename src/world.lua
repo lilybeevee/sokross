@@ -270,6 +270,10 @@ end
 function World:merge(name)
   name = Utils.toFileName(name)
 
+  if self.main and name == Utils.toFileName(self.main.name) then
+    return self.main.root
+  end
+
   if love.filesystem.getInfo("levels/"..name) then
     local new_path = Utils.copy(self.level.path)
     table.insert(new_path, name)
@@ -298,7 +302,7 @@ end
 
 function World:getVoid()
   if not self.void_room then
-    self.void_room = Room(0, 0, {void = true, palette = "void"})
+    self.void_room = Room(0, 0, {void = true, palette = "void", static = true})
     self:addRoom(self.void_room, self.main)
   end
   return self.void_room

@@ -1,4 +1,4 @@
-VERSION = "0.2.1-dev"
+VERSION = "0.2.1"
 
 TILE_SIZE = 24
 KEY_REPEAT = 0.21
