@@ -25,6 +25,7 @@ MOVE_KEYS = {
   down  = 2,
   left  = 3,
   up    = 4,
+  space = 5,
 }
 
 DEFAULT_RULES = {
@@ -59,10 +60,11 @@ DEFAULT_RULES = {
   {"rule", "push"},
   {"line", "flat"},
   {"tile", "flat"},
+  {"swish", "go"}
 }
 
 SOLID_EFFECTS = {"stop", "push"}
-TILE_ACTIVATORS = {"box", "crate", "flof", "flag", "fork", "key", "arrow", "object", "ladder", "room", "rule", "wall"}
+TILE_ACTIVATORS = {"box", "crate", "flof", "flag", "fork", "key", "arrow", "object", "ladder", "room", "rule", "wall", "swish"}
 
 
 TILE_CANVAS = love.graphics.newCanvas(TILE_SIZE*4, TILE_SIZE*4)

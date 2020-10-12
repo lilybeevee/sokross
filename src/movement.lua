@@ -2,9 +2,20 @@ local Movement = {}
 
 function Movement.turn(dir)
   local moves = {}
-  for _,playrule in ipairs(World.room:getRules(nil, "play")) do
-    for _,tile in ipairs(World.room:getTilesByName(playrule.target)) do
-      table.insert(moves, {tile = tile, dir = dir})
+  for _,gorule in ipairs(World.room:getRules(nil, "go")) do
+    for _,tile in ipairs(World.room:getTilesByName(gorule.target)) do
+      if Movement.canMove(tile, tile.dir, {reason = "move"}) then
+        table.insert(moves, {tile = tile, dir = tile.dir})
+      else
+        table.insert(moves, {tile = tile, dir = DIR_REVERSE[tile.dir]})
+      end
+    end
+  end
+  if dir ~= 5 then
+    for _,playrule in ipairs(World.room:getRules(nil, "play")) do
+      for _,tile in ipairs(World.room:getTilesByName(playrule.target)) do
+        table.insert(moves, {tile = tile, dir = dir})
+      end
     end
   end
   Movement.move(moves)
