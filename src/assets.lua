@@ -257,6 +257,15 @@ function Assets.addTiles()
       colors = {{8, 3}},
       layer = 1,
     },
+    {
+      name = "swish",
+      sprites = {"swish_body", "swish_eyes"},
+      colors = {{3, 3}, {3, 1}},
+      layer = 4,
+      walk = true,
+      rotate = true,
+      property = "go",
+    },
   }
 
   Assets.tiles = {}
@@ -486,7 +495,18 @@ function Assets.addWords()
       type = "mod",
       color = 0,
       dark = true,
-    }
+    },
+    {
+      name = "go",
+      type = "prop",
+      color = 2,
+      dark = true,
+    },
+    {
+      name = "swish",
+      type = "noun",
+      color = 3,
+    },
   }
 
   Assets.words = {}
